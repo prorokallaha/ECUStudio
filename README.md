@@ -8,27 +8,52 @@ Claude поверх структурированного контекста. П�
 
 Архитектура и правила: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Требования
+## Запуск на своей машине
 
-* .NET SDK 10
-* Node.js 20+ (только для сборки UI)
-* PostgreSQL 15+ (сервер) — опционально; desktop и dev используют SQLite
-* `ANTHROPIC_API_KEY` — опционально; без него AI-слой отвечает 503, остальное работает
-
-## Быстрый старт
+Нужно: [.NET SDK 10](https://dotnet.microsoft.com/download/dotnet/10.0), [Node.js 22](https://nodejs.org) (20+ тоже подойдёт, нужен только
+для сборки UI) и git. PostgreSQL не нужен: по умолчанию используется SQLite. `ANTHROPIC_API_KEY` опционален, без него
+AI-разбор отвечает 503, всё остальное работает.
 
 ```bash
-# UI → wwwroot (один раз или после правок фронтенда)
+git clone -b feature/ecustudio-dotnet https://github.com/prorokallaha/ECUStudio.git   # пока код в PR #1
+cd ECUStudio
+dotnet test                                    # проверка окружения: все тесты должны пройти
+
+# 1. собрать UI в wwwroot API (один раз и после правок фронтенда)
 cd frontend && npm ci && npm run export:desktop && cd ..
 
-# сервер на http://localhost:5080 (SQLite в %LOCALAPPDATA%/ECUStudio или ~/.local/share/ECUStudio)
+# 2. запустить сервер (http://localhost:5080)
 dotnet run --project src/ECUStudio.Api
 ```
 
-Откройте http://localhost:5080 → «Demo project»: синтетические stock / Stage 1 файлы и полный анализ.
+Откройте http://localhost:5080 и нажмите «Demo project (synthetic)»: появятся синтетические stock / Stage 1 / aggressive прошивки,
+лог и полный анализ. Свои файлы: «New project» и загрузка `.bin`. База SQLite лежит в `%LOCALAPPDATA%\ECUStudio`
+(Windows), `~/.local/share/ECUStudio` (Linux) или `~/Library/Application Support/ECUStudio` (macOS).
 
-Разработка UI с hot reload: `dotnet run --project src/ECUStudio.Api` + `cd frontend && npm run dev` → http://localhost:3000
-(CORS для localhost:3000 включён в Development). После изменения контрактов API: `npm run gen:api`.
+Демо-прошивки файлами (для CLI или загрузки в UI) создаёт CLI: `dotnet run --project src/ECUStudio.Cli -- demo ./demo`.
+Это синтетические образы, не реальная калибровка.
+
+### Desktop (Windows)
+
+В PowerShell 7 из корня репозитория:
+
+```powershell
+./build/publish-desktop.ps1        # UI → wwwroot, тесты, publish → artifacts/desktop/ECUStudio.exe
+./artifacts/desktop/ECUStudio.exe
+```
+
+Нужен Microsoft Edge WebView2 Runtime (в Windows 10/11 обычно уже установлен). API поднимается внутри процесса
+на случайном loopback-порту, данные в `%LOCALAPPDATA%\ECUStudio\ecustudio.db`. Desktop пока не проверялся на живой Windows.
+
+### Разработка UI с hot reload
+
+```bash
+dotnet run --project src/ECUStudio.Api                                   # терминал 1, API на :5080
+cd frontend && NEXT_PUBLIC_API_BASE=http://localhost:5080 npm run dev     # терминал 2, http://localhost:3000
+```
+
+В PowerShell: `$env:NEXT_PUBLIC_API_BASE="http://localhost:5080"; npm run dev`. CORS для localhost:3000 включён в
+Development. После изменения контрактов API: `npm run gen:api` (при запущенном API).
 
 ## Конфигурация
 
@@ -67,11 +92,6 @@ $cli simulate demo/demo.ecu
 ```
 
 Поля: `storeSize` (1/2/4, по умолчанию 4), `endian` (`Big`/`Little`), `seed`, `complement`. Алгоритмы: `Add8`, `Add16`, `Add32`, `Crc16Ccitt`, `Crc32`.
-
-## Desktop (Windows)
-
-`./build/publish-desktop.ps1` → `artifacts/desktop/ECUStudio.exe` (self-contained, нужен WebView2 Runtime).
-Данные: `%LOCALAPPDATA%/ECUStudio/ecustudio.db`. API поднимается на случайном loopback-порту внутри процесса.
 
 ## Тесты и бенчмарки
 
