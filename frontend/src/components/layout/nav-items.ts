@@ -1,5 +1,5 @@
 import {
-  Activity, Binary, Bot, Car, Cpu, FileBarChart, Gauge, GitCompareArrows, LayoutDashboard, Map, Network, Puzzle,
+  Activity, Library, Binary, Bot, Car, Cpu, FileBarChart, Gauge, GitCompareArrows, LayoutDashboard, Map, Network, Puzzle,
   ScrollText, Settings, ShieldAlert, type LucideIcon,
 } from "lucide-react";
 import type { Section } from "@/hooks/use-workspace";
@@ -20,5 +20,6 @@ export const NAV: { section: Section; label: TKey; icon: LucideIcon; group: "ove
   { section: "logs", label: "nav.logs", icon: ScrollText, group: "review" },
   { section: "ai", label: "nav.ai", icon: Bot, group: "review", needsReport: true },
   { section: "reports", label: "nav.reports", icon: FileBarChart, group: "review", needsReport: true },
+  { section: "library", label: "library.nav", icon: Library, group: "system" },
   { section: "settings", label: "nav.settings", icon: Settings, group: "system" },
 ];

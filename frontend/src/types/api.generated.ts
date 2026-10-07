@@ -833,6 +833,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/files/from-library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddFromLibraryBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/files/{fileId}/content": {
         parameters: {
             query?: never;
@@ -1881,6 +1920,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyses/{analysisId}/stock-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    analysisId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StockCandidate"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analyses/{analysisId}/definitions": {
         parameters: {
             query?: never;
@@ -2015,6 +2091,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyses/{analysisId}/ai/investigate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    analysisId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InvestigateBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MapInvestigation"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analyses/{analysisId}/candidates/{candidateId}/hypotheses": {
         parameters: {
             query?: never;
@@ -2080,6 +2197,11 @@ export interface components {
             cacheReadTokens: number;
             /** Format: int64 */
             cacheWriteTokens: number;
+        };
+        AddFromLibraryBody: {
+            entryId: string;
+            role: null | components["schemas"]["FileRole"];
+            label: null | string;
         };
         AddLibraryRootBody: {
             path: string;
@@ -2342,6 +2464,8 @@ export interface components {
         ConfigurationStatus: "Verified" | "Resolved" | "Ambiguous" | "Unknown";
         /** @enum {unknown} */
         CoolantState: "Cold" | "Normal" | "Hot";
+        /** @enum {unknown} */
+        CoverageStatus: "Computed" | "Partial" | "Unknown" | "NotApplicable";
         CreateProjectBody: {
             name: string;
             vin: null | string;
@@ -2681,6 +2805,11 @@ export interface components {
             atmosphericPressureMbar?: number;
             coolant: components["schemas"]["CoolantState"];
         };
+        InvestigateBody: {
+            mapId: null | string;
+            candidateId: null | string;
+            language: null | string;
+        };
         JobEvent: {
             /** Format: uuid */
             jobId: string;
@@ -2844,6 +2973,12 @@ export interface components {
             link: null | string;
             code: string;
         };
+        MapAlternative: {
+            purpose: string;
+            /** Format: double */
+            confidence: number;
+            rationale: string;
+        };
         MapCandidate: {
             id: string;
             /** Format: int32 */
@@ -2869,6 +3004,7 @@ export interface components {
             confirmedRole?: null | components["schemas"]["MapRole"];
             decisionNote?: null | string;
             best?: components["schemas"]["RoleHypothesis"];
+            displayName: null | string;
             /** Format: int32 */
             xAxisAddress: number;
             /** Format: int32 */
@@ -2919,6 +3055,24 @@ export interface components {
             confidence: number;
             rationale: string;
             evidence: components["schemas"]["Evidence"][];
+        };
+        MapInvestigation: {
+            target: string;
+            purpose: string;
+            purposeText: string;
+            /** Format: double */
+            confidence: number;
+            evidence: components["schemas"]["Evidence"][];
+            counterEvidence: string[];
+            valueUnit: string;
+            xAxis: string;
+            yAxis: string;
+            relatedMaps: string[];
+            verificationSteps: string[];
+            alternatives: components["schemas"]["MapAlternative"][];
+            fromCache: boolean;
+            /** Format: int32 */
+            bytesSent: number;
         };
         MapOperation: {
             kind: components["schemas"]["MapOperationKind"];
@@ -3012,6 +3166,13 @@ export interface components {
             /** Format: int32 */
             gear: number;
         };
+        OutputCoverage: {
+            output: string;
+            status: components["schemas"]["CoverageStatus"];
+            dependsOn: string[];
+            missing: components["schemas"]["Prerequisite"][];
+            note?: null | string;
+        };
         Param: {
             /** Format: double */
             number?: number;
@@ -3063,6 +3224,13 @@ export interface components {
             beyondCalibratedRange: boolean;
             trace?: null | components["schemas"]["TraceStep"][];
         };
+        Prerequisite: {
+            kind: components["schemas"]["PrerequisiteKind"];
+            id: string;
+            label: string;
+        };
+        /** @enum {unknown} */
+        PrerequisiteKind: "Map" | "Hardware" | "StockFile";
         Project: {
             /** Format: uuid */
             id: string;
@@ -3220,6 +3388,7 @@ export interface components {
             /** Format: int32 */
             evaluatedPoints: number;
             assumptions: string[];
+            coverage: components["schemas"]["OutputCoverage"][];
         };
         /** @enum {unknown} */
         SourceType: "OemSpec" | "PublicSpec" | "Database" | "VariantTypical" | "VinDecode" | "EcuBinary" | "Damos" | "A2L" | "Xdf" | "DefinitionDb" | "SignatureScan" | "DiagnosticLog" | "Calculated" | "AIInferred" | "User" | "Assumption" | "Unknown";
@@ -3245,6 +3414,22 @@ export interface components {
         };
         /** @enum {unknown} */
         StepState: "Pending" | "Running" | "Done" | "Skipped" | "Failed";
+        StockCandidate: {
+            origin: components["schemas"]["StockCandidateOrigin"];
+            name: string;
+            /** Format: uuid */
+            fileId?: null | string;
+            libraryEntryId?: null | string;
+            level: components["schemas"]["MatchLevel"];
+            sameSoftware: boolean;
+            sizeMatches: boolean;
+            /** Format: int32 */
+            differingBytes?: null | number;
+            available: boolean;
+            reasons: string[];
+        };
+        /** @enum {unknown} */
+        StockCandidateOrigin: "Project" | "Library";
         SystemInfo: {
             version: string;
             aiConfigured: boolean;

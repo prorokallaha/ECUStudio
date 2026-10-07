@@ -5,14 +5,25 @@ import type { AnalysisReport, DiffSummary } from "@/types/domain";
 import { PageHeader, WithReport } from "@/components/layout/page";
 import { Badge, Card, CardHeader, EmptyState, SeverityBadge } from "@/components/ui";
 import { MapViewer } from "@/components/calibration/map-viewer";
-import { useMapData } from "@/hooks/use-analysis";
+import { useMapData, useReport } from "@/hooks/use-analysis";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { hex } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { useT } from "@/i18n";
+import { Binary, Table2 } from "lucide-react";
+import { ViewSwitch } from "@/components/binary/view-switch";
+import { ByteDiff } from "./byte-diff";
 
 export function DiffPage() {
-  return <WithReport>{(r) => <Diff r={r} />}</WithReport>;
+  const t = useT();
+  const { analysisId } = useWorkspace();
+  const report = useReport();
+  const mapsDefault = !!analysisId && (report.isLoading || !!report.data?.stockSha256);
+  return (
+    <ViewSwitch fallback={mapsDefault ? "maps" : "bytes"} items={[{ value: "maps", label: t("editor.diff.tabMaps"), icon: <Table2 className="size-3.5" /> }, { value: "bytes", label: t("editor.diff.tabBytes"), icon: <Binary className="size-3.5" /> }]}>
+      {(view) => (view === "bytes" ? <ByteDiff /> : <WithReport>{(r) => <Diff r={r} />}</WithReport>)}
+    </ViewSwitch>
+  );
 }
 
 function Diff({ r }: { r: AnalysisReport }) {

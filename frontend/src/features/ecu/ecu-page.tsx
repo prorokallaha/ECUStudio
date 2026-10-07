@@ -5,6 +5,7 @@ import { Badge, Card, CardBody, CardHeader, ConfidenceBadge, SourceBadge } from 
 import { MemoryMap } from "@/components/binary/memory-map";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { fmtBytes, fmtParam, hex } from "@/lib/format";
+import { DefinitionBindingCard, DefinitionMatchesCard } from "@/features/library/definition-cards";
 import { useT } from "@/i18n";
 
 export function EcuPage() {
@@ -13,7 +14,7 @@ export function EcuPage() {
 
 function Ecu({ r }: { r: AnalysisReport }) {
   const t = useT();
-  const { router, href } = useWorkspace();
+  const { router, href, projectId, analysisId } = useWorkspace();
   const e = r.ecu;
   const rows: [string, Param | string][] = [
     [t("ecu.boschNumber"), e.boschNumber!], [t("ecu.oemPartNumber"), e.oemPartNumber!], [t("ecu.hardwareNumber"), e.hardwareNumber!], [t("ecu.softwareNumber"), e.softwareNumber!],
@@ -61,6 +62,8 @@ function Ecu({ r }: { r: AnalysisReport }) {
             ))}
           </CardBody>
         </Card>
+        {projectId && <DefinitionBindingCard r={r} projectId={projectId} />}
+        {projectId && analysisId && <DefinitionMatchesCard analysisId={analysisId} projectId={projectId} className="xl:col-span-2" />}
         <Card className="xl:col-span-3">
           <CardHeader title={t("ecu.memoryMap")} subtitle={t("ecu.memoryMapSubtitle")} />
           <CardBody><MemoryMap r={r} onPick={(o) => router.push(href("binary", { offset: o }))} /></CardBody>

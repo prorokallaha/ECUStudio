@@ -1,7 +1,7 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Play, Upload } from "lucide-react";
+import { FileCode2, Play, Upload } from "lucide-react";
 import { toast } from "sonner";
 import type { FileRole, Project } from "@/types/domain";
 import { api, ApiError } from "@/services/api";
@@ -10,6 +10,7 @@ import { useFileDrop } from "@/hooks/use-file-drop";
 import { Button, Card, CardHeader, Select, SeverityBadge, EstimateValue } from "@/components/ui";
 import { fmtBytes, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { DefinitionImportDialog } from "@/features/library/definition-import-dialog";
 import { useT } from "@/i18n";
 
 /** Project binaries and their versions (version history: every file keeps its own analysis summary). */
@@ -18,6 +19,7 @@ export function FilesCard({ project }: { project: Project }) {
   const qc = useQueryClient();
   const run = useRunAnalysis();
   const input = useRef<HTMLInputElement>(null);
+  const [defOpen, setDefOpen] = useState(false);
   const upload = async (files: File[]) => {
     for (const f of files) {
       try {
@@ -41,6 +43,7 @@ export function FilesCard({ project }: { project: Project }) {
         subtitle={t("vehicle.filesSubtitle")}
         actions={<>
           <input ref={input} type="file" multiple hidden onChange={(e) => e.target.files && upload(Array.from(e.target.files))} />
+          <Button size="xs" variant="ghost" onClick={() => setDefOpen(true)} title={project.definition?.name}><FileCode2 className="size-3" /><span className="max-w-48 truncate">{project.definition ? t("library.definitionBound", { name: project.definition.name }) : t("library.importButton")}</span></Button>
           <Button size="xs" onClick={() => input.current?.click()}><Upload className="size-3" />{t("common.upload")}</Button>
         </>}
       />
@@ -70,6 +73,7 @@ export function FilesCard({ project }: { project: Project }) {
         </tbody>
       </table>
       {!(project.files ?? []).length && <div className="px-3 py-6 text-center text-xs text-fg-muted">{t("vehicle.noFiles")}</div>}
+      <DefinitionImportDialog open={defOpen} onClose={() => setDefOpen(false)} projectId={project.id} />
     </Card>
   );
 }

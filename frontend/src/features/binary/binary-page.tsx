@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Bookmark, BookmarkPlus, ChevronDown, ChevronUp, CornerDownRight, Search, Trash2 } from "lucide-react";
+import { Bookmark, BookmarkPlus, ChevronDown, ChevronUp, CornerDownRight, Eye, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { AnalysisReport, DataType } from "@/types/domain";
 import { PageHeader, WithReport } from "@/components/layout/page";
@@ -13,9 +13,17 @@ import { useSelection } from "@/stores/selection";
 import { api, ApiError } from "@/services/api";
 import { hex } from "@/lib/format";
 import { useT } from "@/i18n";
+import { ViewSwitch } from "@/components/binary/view-switch";
+import { BinaryEditor } from "./binary-editor";
 
 export function BinaryPage() {
-  return <WithReport>{(r) => <BinaryViewer r={r} />}</WithReport>;
+  const t = useT();
+  const { analysisId } = useWorkspace();
+  return (
+    <ViewSwitch fallback={analysisId ? "analysis" : "edit"} items={[{ value: "analysis", label: t("editor.viewAnalysis"), icon: <Eye className="size-3.5" /> }, { value: "edit", label: t("editor.viewEdit"), icon: <Pencil className="size-3.5" /> }]}>
+      {(view) => (view === "edit" ? <BinaryEditor /> : <WithReport>{(r) => <BinaryViewer r={r} />}</WithReport>)}
+    </ViewSwitch>
+  );
 }
 
 function BinaryViewer({ r }: { r: AnalysisReport }) {

@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export type Section =
   | "dashboard" | "vehicle" | "ecu" | "binary" | "maps" | "diff" | "dependencies" | "simulation" | "dyno"
-  | "components" | "risks" | "logs" | "ai" | "reports" | "settings";
+  | "components" | "risks" | "logs" | "ai" | "reports" | "settings" | "library";
 
 /**
  * Workspace location lives in the URL (static export ⇒ query parameters, not dynamic segments):
