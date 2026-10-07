@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using ECUStudio.AI;
 using ECUStudio.Application.DevTools;
+using ECUStudio.Application.Library;
+using ECUStudio.Calibration.Library;
 using ECUStudio.Application.Projects;
 using ECUStudio.Binary;
 using ECUStudio.Calibration.Model;
@@ -41,7 +43,8 @@ public sealed class StudioService(
     ISimulationEngine engine,
     JobTracker jobs,
     AIOrchestrator ai,
-    IAIProvider aiProvider)
+    IAIProvider aiProvider,
+    DefinitionService definitions)
 {
     private readonly ConcurrentDictionary<Guid, AnalysisSession> _sessions = new();
     private readonly ConcurrentDictionary<Guid, AIAnalysisResult> _aiResults = new();
@@ -52,6 +55,7 @@ public sealed class StudioService(
     public PluginRegistry Plugins => plugins;
     public VehicleKnowledgeBase KnowledgeBase => kb;
     public bool AIConfigured => aiProvider.IsConfigured;
+    public DefinitionLibrary Library => definitions.Library;
 
     // ---------------- projects -----------------------------------------------------------
     public Task<IReadOnlyList<Project>> ListProjectsAsync(CancellationToken ct = default) => store.ListAsync(ct);
@@ -238,10 +242,16 @@ public sealed class StudioService(
         var confirmed = decisions.Where(d => d.BinarySha256 == modImage.Sha256 && d.Decision == "confirm" && Enum.TryParse<MapRole>(d.Role, out _))
             .GroupBy(d => d.Address).Select(g => g.Last()).Select(d => new ConfirmedCandidate(d.Address, Enum.Parse<MapRole>(d.Role!))).ToList();
 
+        var projectDefinitionContent = project.Definition is { Origin: DefinitionOrigin.Upload } pd ? await store.GetFileContentAsync(pd.Id, ct) : null;
+        var resolved = definitions.Resolve(project.Definition, _ => projectDefinitionContent, modImage);
+
         var session = await Task.Run(() => pipeline.Run(new AnalysisRequest
         {
             Modified = modImage,
             Stock = stockBytes is null ? null : BinaryImage.FromBytes(stockBytes, stockFile!.Name),
+            Definition = resolved.Definition,
+            DefinitionBinding = resolved.Binding,
+            DefinitionNotes = resolved.Notes,
             Vin = project.Vin,
             Overrides = project.HardwareOverrides,
             PreferredVariantId = project.PreferredVariantId,
@@ -273,6 +283,100 @@ public sealed class StudioService(
             Headline = new ProjectHeadline(session.Report.Vehicle.Profile.Model.Text, session.Report.Vehicle.Profile.EngineCode.Text, session.Report.Ecu.EcuFamily, session.Report.Risk.Overall),
         }, ct);
         return session;
+    }
+
+    // ---------------- definitions ---------------------------------------------------------
+
+    /// <summary>Binary a definition is checked against: the latest analysed file, else modified, else stock.</summary>
+    private async Task<BinaryImage?> TargetBinaryAsync(Project project, CancellationToken ct)
+    {
+        var file = project.Files.FirstOrDefault(f => f.Summary?.AnalysisId == project.LatestAnalysisId && project.LatestAnalysisId is not null)
+            ?? project.Files.LastOrDefault(f => f.Role == FileRole.Modified) ?? project.Stock ?? project.Files.LastOrDefault();
+        if (file is null) return null;
+        var bytes = await store.GetFileContentAsync(file.Id, ct);
+        return bytes is null ? null : BinaryImage.FromBytes(bytes, file.Name);
+    }
+
+    public async Task<DefinitionPreview> PreviewDefinitionAsync(Guid projectId, string fileName, byte[] content, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        using var target = await TargetBinaryAsync(project, ct);
+        return definitions.Preview(fileName, content, target);
+    }
+
+    public async Task<DefinitionPreview> PreviewLibraryDefinitionAsync(Guid projectId, string entryId, CancellationToken ct = default)
+    {
+        var (entry, content) = definitions.Library.Read(entryId);
+        var preview = await PreviewDefinitionAsync(projectId, Path.GetFileName(entry.RelativePath), content, ct);
+        return preview with { Name = entry.RelativePath };
+    }
+
+    /// <summary>Uploads a definition into the project. An incompatible definition needs <paramref name="force"/>.</summary>
+    public async Task<Project> BindDefinitionAsync(Guid projectId, string fileName, byte[] content, bool force, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        using var target = await TargetBinaryAsync(project, ct);
+        var preview = definitions.Preview(fileName, content, target);
+        EnsureBindable(preview, force);
+        var def = new ProjectDefinition
+        {
+            Id = Guid.NewGuid(), Name = fileName, Format = preview.Format, Origin = DefinitionOrigin.Upload,
+            Sha256 = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(content)), Size = content.Length,
+            MapCount = preview.MapCount, Identifiers = preview.Identifiers, Compatibility = preview.Compatibility, CheckedAgainst = preview.Binary,
+        };
+        await store.SaveFileContentAsync(def.Id, content, ct);
+        if (project.Definition is { Origin: DefinitionOrigin.Upload } old) await store.DeleteFileContentAsync(old.Id, ct);
+        var updated = project with { Definition = def, UpdatedAt = DateTimeOffset.UtcNow };
+        await store.SaveAsync(updated, ct);
+        return updated;
+    }
+
+    /// <summary>Binds a library file by reference (the archive file is read in place at each analysis, never copied).</summary>
+    public async Task<Project> BindLibraryDefinitionAsync(Guid projectId, string entryId, bool force, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        var (entry, content) = definitions.Library.Read(entryId);
+        using var target = await TargetBinaryAsync(project, ct);
+        var preview = definitions.Preview(Path.GetFileName(entry.RelativePath), content, target);
+        EnsureBindable(preview, force);
+        var def = new ProjectDefinition
+        {
+            Id = Guid.NewGuid(), Name = Path.GetFileName(entry.RelativePath), Format = entry.Format, Origin = DefinitionOrigin.Library, LibraryEntryId = entry.Id,
+            Sha256 = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(content)), Size = content.Length,
+            MapCount = preview.MapCount, Identifiers = LibraryScanner.Merge(entry.Identifiers, preview.Identifiers), Compatibility = preview.Compatibility, CheckedAgainst = preview.Binary,
+        };
+        if (project.Definition is { Origin: DefinitionOrigin.Upload } old) await store.DeleteFileContentAsync(old.Id, ct);
+        var updated = project with { Definition = def, UpdatedAt = DateTimeOffset.UtcNow };
+        await store.SaveAsync(updated, ct);
+        return updated;
+    }
+
+    public async Task<Project> UnbindDefinitionAsync(Guid projectId, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        if (project.Definition is { Origin: DefinitionOrigin.Upload } old) await store.DeleteFileContentAsync(old.Id, ct);
+        var updated = project with { Definition = null, UpdatedAt = DateTimeOffset.UtcNow };
+        await store.SaveAsync(updated, ct);
+        return updated;
+    }
+
+    private static void EnsureBindable(DefinitionPreview preview, bool force)
+    {
+        if (preview.Error is { } error) throw new DefinitionException(error);
+        if (preview.Compatibility is { Status: CompatibilityStatus.Incompatible } c && !force)
+            throw new EcuStudioException("DEFINITION_INCOMPATIBLE", $"Definition does not fit the binary: {string.Join("; ", c.Reasons)}", 409,
+                new Dictionary<string, object?> { ["compatibility"] = c });
+    }
+
+    /// <summary>Library entries matched against the analysed binary, best first, with reasons.</summary>
+    public async Task<IReadOnlyList<DefinitionMatch>> LibraryMatchesAsync(Guid analysisId, CancellationToken ct = default)
+    {
+        var s = await GetSessionAsync(analysisId, ct);
+        var ident = s.Report.Ecu;
+        var engine = ECUStudio.Vehicle.Resolution.EcuIdentificationProvider.ParseEngineText(ident.EngineCode.Text) is { } e ? e.Litres : null;
+        var key = new BinaryKey(ident.SoftwareNumber.IsKnown ? ident.SoftwareNumber.Text : null, ident.HardwareNumber.IsKnown ? ident.HardwareNumber.Text : null,
+            ident.OemPartNumber.IsKnown ? ident.OemPartNumber.Text : null, ident.EcuFamily, s.Report.ModifiedSha256, engine);
+        return definitions.Library.Match(key);
     }
 
     public async Task<AnalysisReport> GetReportAsync(Guid analysisId, CancellationToken ct = default)

@@ -1,6 +1,7 @@
 using ECUStudio.AI;
 using ECUStudio.Application.Analysis;
 using ECUStudio.Application.DevTools;
+using ECUStudio.Application.Library;
 using ECUStudio.Application.Projects;
 using ECUStudio.Calibration.Definitions;
 using ECUStudio.Calibration.Plugins;
@@ -26,6 +27,10 @@ public sealed record EcuStudioOptions
     public string? AnthropicApiKey { get; init; } = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
     public string AIModel { get; init; } = Environment.GetEnvironmentVariable("ECUSTUDIO_CLAUDE_MODEL") ?? "claude-opus-5-5";
     public int AIMaxParallel { get; init; } = 3;
+    /// <summary>Directory for the definition library index (metadata only). Default: the application data directory.</summary>
+    public string? LibraryPath { get; init; }
+    /// <summary>When non-empty, only directories under these paths can be added to the library (server deployments).</summary>
+    public IReadOnlyList<string> LibraryAllowedRoots { get; init; } = [];
 
     public static string DefaultSqlitePath()
     {
@@ -33,6 +38,9 @@ public sealed record EcuStudioOptions
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, "ecustudio.db");
     }
+
+    public static string DefaultLibraryPath() =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ECUStudio", "library");
 }
 
 public static class EcuStudioServices
@@ -82,6 +90,12 @@ public static class EcuStudioServices
         }
 
         services.AddSingleton(sp => new AIOrchestrator(sp.GetRequiredService<IAIProvider>(), sp.GetRequiredService<IAICacheStore>(), options.AIModel, options.AIMaxParallel));
+        services.AddSingleton<IDefinitionLibraryStore>(options.Storage.Equals("memory", StringComparison.OrdinalIgnoreCase) && options.LibraryPath is null
+            ? new InMemoryLibraryStore()
+            : new JsonFileLibraryStore(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath()));
+        services.AddSingleton(new LibraryPolicy(options.LibraryAllowedRoots));
+        services.AddSingleton<DefinitionLibrary>();
+        services.AddSingleton<DefinitionService>();
         services.AddSingleton<StudioService>();
         return services;
     }

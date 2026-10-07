@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ECUStudio.Application.Library;
 using ECUStudio.Components;
 using ECUStudio.Core;
 
@@ -56,6 +57,8 @@ public sealed record Project
     public int LogCount => Logs.Count;
     public int SimulationCount { get; init; }
     public Guid? LatestAnalysisId { get; init; }
+    /// <summary>External definition bound by the user (uploaded or chosen from the library).</summary>
+    public ProjectDefinition? Definition { get; init; }
 
     [JsonIgnore] public ProjectFile? Stock => Files.FirstOrDefault(f => f.Role == FileRole.Stock);
 }

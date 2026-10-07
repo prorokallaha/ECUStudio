@@ -20,6 +20,9 @@ public sealed record AnalysisRequest
     public string? Vin { get; init; }
     public IReadOnlyList<HardwareOverride> Overrides { get; init; } = [];
     public ExternalDefinition? Definition { get; init; }
+    /// <summary>Where <see cref="Definition"/> came from (project binding or library match), copied to the report.</summary>
+    public Library.DefinitionBinding? DefinitionBinding { get; init; }
+    public IReadOnlyList<string> DefinitionNotes { get; init; } = [];
     public string? PreferredVariantId { get; init; }
     public string? TransmissionId { get; init; }
     public IReadOnlyList<ConfirmedCandidate> ConfirmedCandidates { get; init; } = [];
@@ -188,7 +191,8 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             Vehicle = vehicle,
             DataAvailability = availability,
             DefinitionSource = resolution.Source,
-            DefinitionNotes = [.. resolution.Notes, .. modBuild.Errors],
+            DefinitionNotes = [.. req.DefinitionNotes, .. resolution.Notes, .. modBuild.Errors],
+            DefinitionBinding = req.DefinitionBinding,
             Maps = modBuild.Set.Maps.Select(m => Summary(m, diff, graph)).OrderBy(m => m.Category).ThenBy(m => m.Name).ToList(),
             Candidates = candidates,
             ModifiedMaps = diff?.Modified.Select(d => new DiffSummary(d.MapId, d.Name, d.Role, d.ChangedCells, d.TotalCells, Math.Round(d.MeanDeltaPct, 1), Math.Round(d.MaxDeltaPct, 1), d.StockMax, d.ModMax, d.Unit, d.MeanRatio)).ToList() ?? [],

@@ -21,6 +21,8 @@ public sealed record ApiHostOptions
 public static class ApiHost
 {
     public const long MaxUploadBytes = 16 * 1024 * 1024;
+    /// <summary>Request limit: definition files (A2L) are much larger than binaries; per-endpoint checks apply the tighter limits.</summary>
+    public const long MaxRequestBytes = ECUStudio.Application.Library.DefinitionLibrary.MaxImportBytes + 64 * 1024;
 
     public static WebApplication Build(string[] args, ApiHostOptions? hostOptions = null)
     {
@@ -42,8 +44,8 @@ public static class ApiHost
             o.SerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
             o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
-        builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = MaxUploadBytes + 64 * 1024);
-        builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = MaxUploadBytes + 64 * 1024);
+        builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = MaxRequestBytes);
+        builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = MaxRequestBytes);
         builder.Services.AddOpenApi(o => o.AddSchemaTransformer((schema, ctx, _) =>
         {
             // The API never omits non-null properties (only nulls are skipped), so mark non-nullable ones required:
@@ -110,6 +112,8 @@ public static class ApiHost
             ConnectionString = string.IsNullOrWhiteSpace(conn) ? null : conn,
             DefinitionsPath = c["ECUSTUDIO_DEFINITIONS"] ?? c["EcuStudio:DefinitionsPath"],
             IncludeDemoDefinitions = !string.Equals(c["EcuStudio:IncludeDemoDefinitions"], "false", StringComparison.OrdinalIgnoreCase),
+            LibraryPath = c["ECUSTUDIO_LIBRARY"] ?? c["EcuStudio:LibraryPath"],
+            LibraryAllowedRoots = c.GetSection("EcuStudio:LibraryAllowedRoots").Get<string[]>() ?? [],
             AIModel = c["ECUSTUDIO_CLAUDE_MODEL"] ?? c["EcuStudio:AIModel"] ?? "claude-opus-5-5",
         };
     }

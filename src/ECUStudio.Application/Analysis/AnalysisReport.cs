@@ -76,6 +76,7 @@ public sealed record AnalysisReport
     public required DataAvailability DataAvailability { get; init; }
     public required string DefinitionSource { get; init; }
     public IReadOnlyList<string> DefinitionNotes { get; init; } = [];
+    public Library.DefinitionBinding? DefinitionBinding { get; init; }
     public required IReadOnlyList<MapSummary> Maps { get; init; }
     public required IReadOnlyList<MapCandidate> Candidates { get; init; }
     public IReadOnlyList<DiffSummary> ModifiedMaps { get; init; } = [];
