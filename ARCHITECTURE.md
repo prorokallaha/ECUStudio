@@ -17,7 +17,8 @@
 | Утверждение AI без ссылки на доказательство из индекса контекста отклоняется | `AIResponseValidator.ParseFindings` |
 | AI не может понизить серьёзность, полученную из физики; сам по себе эскалирует максимум до `WARNING` | `ConsensusEngine.Combine` |
 | Неизвестная карта — кандидат, пока человек не подтвердит (CONFIRM / REJECT / EDIT DEFINITION) | `MapCandidate`, `candidate_decisions` |
-| Контрольные суммы: честный `NotImplemented`, а не «Valid» | `Edc16U34Plugin.VerifyChecksums` |
+| Контрольные суммы проверяются только по блокам, описанным в определении; без описания — `NotImplemented`, а не «Valid». «Valid» не значит «готово к записи» | `ChecksumVerifier`, `Edc16U34Plugin.VerifyChecksums` |
+| Лог повышает data availability, только если все сравнимые каналы совпадают с моделью; расхождение — finding, а не усреднение | `LogValidator`, `AnalysisPipeline.Availability` |
 
 ## 2. Структура решения
 
@@ -25,8 +26,8 @@
 ECUStudio.sln
 ├─ src/
 │  ├─ ECUStudio.Core            Estimate, Param, Severity, Finding/Evidence, ошибки, хеширование, JSON-опции
-│  ├─ ECUStudio.Binary          BinaryImage, типы данных/endianness, diff, поиск по шаблону, секции памяти, CRC
-│  ├─ ECUStudio.Calibration     модель карт, интерполяция, сканер Bosch-карт, классификатор, импорт XDF/JSON,
+│  ├─ ECUStudio.Binary          BinaryImage, типы данных/endianness, diff, поиск по шаблону, секции памяти, CRC/ADD-чексуммы по описанию блоков
+│  ├─ ECUStudio.Calibration     модель карт, интерполяция, сканер Bosch-карт, классификатор, импорт XDF/A2L/JSON,
 │  │                            плагины ECU (IEcuPlugin, Edc16U34Plugin), diff карт, детектор аномалий, граф зависимостей
 │  ├─ ECUStudio.Vehicle         VIN-декодер (ISO 3779 + VAG), база вариантов авто, VehicleResolver
 │  ├─ ECUStudio.Components      каталог компонентов (двигатель, турбина, форсунки, КПП…), HardwareProfile, overrides
@@ -54,8 +55,8 @@ ECUStudio.sln
 BIN (+stock BIN, +VIN, +definition, +hardware overrides)
  │
  ├─ identify      PluginRegistry.Detect → IEcuPlugin (скоринг, причины; ниже порога — UNSUPPORTED_ECU 422)
- ├─ read          Identify: SW/HW/part номера, секции памяти, endianness; VerifyChecksums
- ├─ maps          ResolveDefinitions: DefinitionDb (по SW) → внешнее определение (XDF/JSON) → сигнатурный скан
+ ├─ read          Identify: SW/HW/part номера, секции памяти, endianness
+ ├─ maps          ResolveDefinitions: внешнее определение (XDF/A2L/JSON) → DefinitionDb (по SW) → сигнатурный скан
  │                (кандидаты с гипотезами ролей) → подтверждённые пользователем кандидаты
  ├─ stock         MapDiffer: побайтовый diff + diff карт; изменения вне карт с привязкой к секции (Code/Calibration)
  │                AnomalyDetector: PERCENTAGE_TUNING, LIMITER_MAXED, CLIPPING, FLAT_MAP, DISCONTINUITY,
@@ -65,6 +66,7 @@ BIN (+stock BIN, +VIN, +definition, +hardware overrides)
  ├─ dependencies  граф: карты ↔ физические величины (Driver Wish → Torque Limiter → Torque→IQ → Smoke → …)
  ├─ simulation    OperatingGrid: грубая сетка RPM×педаль + адаптивное уточнение на смене лимитера;
  │                WOT-сценарии: высота 1500/3000 м, жара, холод, передачи
+ ├─ logs          LogValidator: WOT-выборка лога, медианы по 250 rpm против модели, допуск по каналу
  └─ risk          RiskEngine: нагрузка vs предел по каждому компоненту → вердикт + CriticalUnknowns
  │
  └─ AnalysisReport (JSON, хранится целиком) + MarkdownReport
@@ -217,15 +219,21 @@ severity, EstimateValue, LoadBar), `components/layout` (top bar, nav, AI-пан�
 ## 12. Ограничения текущей версии и roadmap
 
 Сейчас:
-* Контрольные суммы EDC16U34 не реализованы (статус `NotImplemented`) — после правки файл нельзя считать готовым к записи.
-* Импорт A2L / DAMOS / OLS — заглушки с понятной ошибкой; работают XDF и нативный JSON.
-* Раздел Logs (диагностические логи) — не реализован, UI честно об этом говорит.
+* Чексуммы проверяются только по блокам из `*.ecudef.json` (ADD8/16/32, CRC16-CCITT, CRC32, complement).
+  Реальные адреса блоков EDC16U34 не зашиты и не угадываются: без описания статус `NotImplemented`.
+  Коррекции чексумм нет и не будет: ECUStudio анализирует файлы, а не готовит их к записи.
+* A2L: подмножество (VALUE/CURVE/MAP/VAL_BLK, STD/COM/FIX оси, IDENTICAL/LINEAR/линейный RAT_FUNC,
+  ROW/COLUMN_DIR). Остальное пропускается поштучно и перечисляется в заметках определения.
+  Число точек осей берётся из MAX_AXIS_POINTS, упаковка без ALIGNMENT-паддинга.
+* DAMOS (.dam) не читается — нужен экспорт ASAP2 (*.a2l). OLS — закрытый формат WinOLS, нужен экспорт XDF/A2L.
+* Импорт определения доступен из CLI (`--definition`) и через каталог Definition DB; загрузки определения
+  в проект через UI пока нет.
+* Логи: VCDS и CSV; модель стационарная, поэтому спул-лаг на низких оборотах виден как отрицательный bias boost.
 * Большинство пределов компонентов в каталоге `UNKNOWN` (нет опубликованных данных) — это by design.
 * Desktop собирается на Linux, но не проверен на Windows.
 
 Дальше:
-1. Чексуммы EDC16U34 (и запись файла только при `Valid`).
-2. Импорт диагностических логов (VCDS / CSV) → калибровка модели по измерениям, рост confidence cap.
+1. Загрузка определения (XDF/A2L/JSON) в проект через UI.
+2. Калибровка параметров модели по логам (сейчас лог только подтверждает или опровергает модель).
 3. Плагины EDC15/EDC17/MED17 (интерфейс `IEcuPlugin` уже отделён от ядра).
-4. Импорт A2L/DAMOS.
-5. Проекции отчётов в БД для поиска по парку прошивок.
+4. Проекции отчётов в БД для поиска по парку прошивок.

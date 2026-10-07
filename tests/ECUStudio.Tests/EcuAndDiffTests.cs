@@ -84,6 +84,18 @@ public class ChecksumVerifierTests
         Assert.Equal(expected, ChecksumVerifier.Compute(Image(), Spec(a, size, e)));
 
     [Fact]
+    public void Checksum_blocks_parse_from_definition_json()
+    {
+        var file = ECUStudio.Calibration.Definitions.DefinitionFile.Parse("""
+            { "plugin": "edc16u34", "checksums": [
+              { "name": "Cal", "start": "0x050000", "end": "0x070000", "algorithm": "Add16", "storedAt": "0x07FFF4", "storeSize": 2, "endian": "Little", "complement": true } ] }
+            """);
+        var spec = Assert.Single(file.ToChecksumSpecs());
+        Assert.Equal((0x50000, 0x70000, 0x7FFF4, 2), (spec.Start, spec.End, spec.StoredAt, spec.StoreSize));
+        Assert.Equal((ChecksumAlgorithm.Add16, Endianness.Little, true), (spec.Algorithm, spec.Endian, spec.Complement));
+    }
+
+    [Fact]
     public void Crc_variants_match_reference_check_values()
     {
         Assert.Equal(0x29B1, ChecksumVerifier.Crc16Ccitt("123456789"u8));

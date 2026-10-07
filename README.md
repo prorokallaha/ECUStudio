@@ -55,6 +55,18 @@ $cli simulate demo/demo.ecu
 ```
 
 `--json` выводит полный `AnalysisReport`, `--definition file.xdf` подключает внешнее определение карт.
+`--definition` принимает `.xdf`, `.a2l` и `.ecudef.json`; `--log pull.csv` (можно несколько) сравнивает лог VCDS/CSV с моделью.
+
+Блоки чексумм описываются в `*.ecudef.json` (конец диапазона исключается):
+
+```json
+"checksums": [
+  { "name": "Calibration ADD32", "start": "0x050000", "end": "0x070000", "algorithm": "Add32", "storedAt": "0x07FFF4" },
+  { "name": "Code CRC32", "start": "0x000000", "end": "0x040000", "algorithm": "Crc32", "storedAt": "0x07FFF0" }
+]
+```
+
+Поля: `storeSize` (1/2/4, по умолчанию 4), `endian` (`Big`/`Little`), `seed`, `complement`. Алгоритмы: `Add8`, `Add16`, `Add32`, `Crc16Ccitt`, `Crc32`.
 
 ## Desktop (Windows)
 
@@ -72,8 +84,9 @@ dotnet run -c Release --project benchmarks/ECUStudio.Benchmarks -- --filter '*'
 
 ## Что сейчас не сделано
 
-* Контрольные суммы EDC16U34 не считаются (статус `NotImplemented`) — файл после правок не готов к записи в блок.
-* Импорт A2L / DAMOS / OLS — заглушки; работают XDF и нативный JSON.
-* Раздел Logs (диагностические логи) не реализован.
+* Чексуммы проверяются только по блокам, описанным в определении; реальные блоки EDC16U34 не зашиты, без описания статус `NotImplemented`. Коррекции чексумм нет.
+* Определения: XDF, A2L (подмножество, неподдерживаемое перечисляется в заметках) и нативный JSON. DAMOS и OLS не читаются, нужен экспорт в A2L/XDF.
+* Определение подключается через CLI `--definition` или каталог Definition DB; загрузки в проект через UI пока нет.
+* Логи VCDS/CSV сравниваются со стационарной моделью; параметры модели по логу пока не калибруются.
 * Демо-данные синтетические — это не реальная калибровка.
 * Desktop-сборка не проверялась на Windows.
