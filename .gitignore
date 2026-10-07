@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+# Static export is a build artifact (npm run export:desktop)
+src/ECUStudio.Api/wwwroot/
+
+# Python (research only)
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+
+.DS_Store
