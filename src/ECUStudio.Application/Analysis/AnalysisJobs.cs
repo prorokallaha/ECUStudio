@@ -31,13 +31,19 @@ public sealed class JobTracker
 
     public JobStatus? Status(Guid id) => _jobs.TryGetValue(id, out var j) ? j.Status : null;
 
-    public IReadOnlyList<JobEvent> History(Guid id) => _jobs.TryGetValue(id, out var j) ? j.History.ToList() : [];
+    public IReadOnlyList<JobEvent> History(Guid id)
+    {
+        if (!_jobs.TryGetValue(id, out var j)) return [];
+        lock (j.Lock) return j.History.ToList();
+    }
 
     public void Publish(JobEvent e)
     {
         if (!_jobs.TryGetValue(e.JobId, out var job)) return;
         lock (job.Lock)
         {
+            // Terminal states are final: a late progress event must not turn a finished job back into "Running".
+            if (job.Status is JobStatus.Completed or JobStatus.Failed) return;
             job.Status = e.Status;
             job.History.Add(e);
             foreach (var s in job.Subscribers) s.Writer.TryWrite(e);

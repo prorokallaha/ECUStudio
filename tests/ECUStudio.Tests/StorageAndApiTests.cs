@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ECUStudio.Core;
 using ECUStudio.Api;
 using ECUStudio.Application.Projects;
 using ECUStudio.Infrastructure;
@@ -217,5 +218,21 @@ public sealed class ApiIntegrationTests : IAsyncLifetime
     {
         var doc = await _http.GetFromJsonAsync<JsonElement>("/api/openapi/v1.json");
         Assert.True(doc.GetProperty("paths").TryGetProperty("/api/v1/projects/{id}/analyses", out _));
+    }
+}
+
+public class JobTrackerTests
+{
+    [Fact]
+    public void Late_progress_after_completion_does_not_reopen_the_job()
+    {
+        var jobs = new ECUStudio.Application.Analysis.JobTracker();
+        var id = jobs.Create();
+        var progress = jobs.ProgressFor(id);
+        progress.Report(new StepProgress("simulation", "Simulation", StepState.Running, 0.5));
+        jobs.Publish(new ECUStudio.Application.Analysis.JobEvent(id, "completed", null, ECUStudio.Application.Analysis.JobStatus.Completed));
+        progress.Report(new StepProgress("simulation", "Simulation", StepState.Running, 0.9));
+        Assert.Equal(ECUStudio.Application.Analysis.JobStatus.Completed, jobs.Status(id));
+        Assert.Equal("completed", jobs.History(id)[^1].Kind);
     }
 }

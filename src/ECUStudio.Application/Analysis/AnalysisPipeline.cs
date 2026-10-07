@@ -144,11 +144,11 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         };
         var stockInput = stockSet is null ? null : modInput with { Calibration = stockSet };
         var grid = new OperatingGrid(engine);
-        var simProgress = new Progress<double>(f => Step("simulation", StepState.Running, stockInput is null ? f : f / 2));
+        var simProgress = new InlineProgress<double>(f => Step("simulation", StepState.Running, stockInput is null ? f : f / 2));
         var modGrid = grid.Run(modInput, req.Grid, simProgress, ct);
         GridResult? stockGrid = null;
         if (stockInput is not null)
-            stockGrid = grid.Run(stockInput, req.Grid, new Progress<double>(f => Step("simulation", StepState.Running, 0.5 + f / 2)), ct);
+            stockGrid = grid.Run(stockInput, req.Grid, new InlineProgress<double>(f => Step("simulation", StepState.Running, 0.5 + f / 2)), ct);
         Step("simulation", StepState.Done, 1, $"{modGrid.EvaluatedPoints + (stockGrid?.EvaluatedPoints ?? 0)} operating points");
 
         Step("risk", StepState.Running);
@@ -339,4 +339,13 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             list.Add(new MainFinding(f.Text, f.Severity, f.RelatedMaps.Count > 0 ? $"maps/{f.RelatedMaps[0]}" : null, f.Code));
         return list;
     }
+}
+
+/// <summary>
+/// Invokes the handler on the reporting thread. <see cref="Progress{T}"/> posts to the thread pool, so its callbacks can
+/// arrive after the step (or the whole job) has finished and overwrite a terminal state.
+/// </summary>
+internal sealed class InlineProgress<T>(Action<T> handler) : IProgress<T>
+{
+    public void Report(T value) => handler(value);
 }
