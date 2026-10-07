@@ -120,7 +120,7 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
         else
         {
             definitions = [];
-            source = "Signature scan only";
+            source = DefinitionResolution.ScanOnly;
             notes.Add("No definition for this software number: maps come from structure scanning and are treated as candidates.");
         }
 

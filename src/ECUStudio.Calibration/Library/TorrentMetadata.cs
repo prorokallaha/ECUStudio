@@ -8,6 +8,9 @@ public sealed record TorrentFile(string Path, long Length);
 /// <summary>File list of a .torrent (BitTorrent v1 metainfo). Only metadata is read; nothing is downloaded.</summary>
 public sealed record TorrentMetadata(string Name, IReadOnlyList<TorrentFile> Files, long TotalLength)
 {
+    /// <summary>BitTorrent v1 info hash: SHA-1 of the bencoded "info" dictionary, lowercase hex.</summary>
+    public string InfoHash { get; init; } = "";
+
     public const int MaxTorrentBytes = 256 * 1024 * 1024;
 
     public static TorrentMetadata Parse(byte[] data)
@@ -32,7 +35,22 @@ public sealed record TorrentMetadata(string Name, IReadOnlyList<TorrentFile> Fil
         }
         else files.Add(new TorrentFile(name, info.GetValueOrDefault("length") as long? ?? 0));
         if (name is "" or "." or ".." || name.Contains('/') || name.Contains('\\')) throw new DefinitionException(".torrent has an unsafe name");
-        return new TorrentMetadata(name, files, files.Sum(f => f.Length));
+        return new TorrentMetadata(name, files, files.Sum(f => f.Length)) { InfoHash = InfoHashOf(data) };
+    }
+
+    private static string InfoHashOf(byte[] data)
+    {
+        // Walk the top-level dictionary to find the exact bytes of the "info" value.
+        var pos = 1;
+        while (pos < data.Length && data[pos] != 'e')
+        {
+            var key = (byte[])Bencode.Read(data, ref pos);
+            var start = pos;
+            Bencode.Read(data, ref pos);
+            if (Encoding.ASCII.GetString(key) == "info")
+                return Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(data.AsSpan(start, pos - start)));
+        }
+        throw new DefinitionException("Not a .torrent file: missing 'info' dictionary");
     }
 
     private static string? Text(Dictionary<string, object> d, string key) => d.GetValueOrDefault(key) is byte[] b ? Encoding.UTF8.GetString(b) : null;

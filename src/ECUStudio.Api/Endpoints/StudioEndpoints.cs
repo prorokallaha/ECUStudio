@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ECUStudio.Application.Acquisition;
 using ECUStudio.Application.Analysis;
 using ECUStudio.Application.Library;
 using ECUStudio.Calibration.Library;
@@ -24,6 +25,9 @@ public sealed record AddLibraryRootBody(string Path, string? Name);
 public sealed record AddTorrentPathBody(string Path, string? DownloadPath);
 public sealed record UpdateLibraryRootBody(string? Name, string? DownloadPath);
 public sealed record LibraryEntryBody(string EntryId, bool Force = false);
+public sealed record AddMagnetBody(string Uri, string? Name);
+public sealed record TorrentSourceOptionsBody(bool? Enabled, int? Priority);
+public sealed record TorrentSourcesDto(string Client, IReadOnlyList<TorrentSource> Sources);
 public sealed record InspectBody(double Rpm, double PedalPct, int Gear = 4, double AmbientTempC = 20, double AltitudeM = 0, double? AtmosphericPressureMbar = null, CoolantState Coolant = CoolantState.Normal);
 public sealed record DecisionBody(string Decision, string? Role, string? Note);
 public sealed record AskBody(string Question, JsonElement? Selection);
@@ -125,25 +129,44 @@ public static class StudioEndpoints
         var lib = api.MapGroup("/library").WithTags("library");
         lib.MapGet("/roots", (StudioService s) => s.Library.Roots());
         lib.MapPost("/roots", (AddLibraryRootBody b, StudioService s) => Results.Created("/api/v1/library/roots", s.Library.AddDirectory(b.Path, b.Name)));
-        lib.MapPost("/torrents", async (IFormFile file, [FromForm] string? downloadPath, StudioService s, CancellationToken ct) =>
+        // A torrent source is indexed once, right after it is added (file list only; nothing is downloaded).
+        lib.MapPost("/torrents", async (IFormFile file, [FromForm] string? downloadPath, StudioService s, ILoggerFactory logs, CancellationToken ct) =>
         {
             if (file.Length > TorrentMetadata.MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 256 MB");
-            return Results.Created("/api/v1/library/roots", s.Library.AddTorrent(Path.GetFileName(file.FileName), await ReadUpload(file, ct), downloadPath));
+            var root = s.Library.AddTorrent(Path.GetFileName(file.FileName), await ReadUpload(file, ct), downloadPath);
+            StartScan(s, root.Id, logs);
+            return Results.Created("/api/v1/library/roots", root);
         }).DisableAntiforgery();
-        lib.MapPost("/torrents/path", (AddTorrentPathBody b, StudioService s) => Results.Created("/api/v1/library/roots", s.Library.AddTorrentFile(b.Path, b.DownloadPath)));
+        lib.MapPost("/torrents/path", (AddTorrentPathBody b, StudioService s, ILoggerFactory logs) =>
+        {
+            var root = s.Library.AddTorrentFile(b.Path, b.DownloadPath);
+            StartScan(s, root.Id, logs);
+            return Results.Created("/api/v1/library/roots", root);
+        });
+        lib.MapPost("/torrents/magnet", (AddMagnetBody b, StudioService s) =>
+        {
+            var (hash, name) = Magnet.Parse(b.Uri.Trim());
+            return Results.Created("/api/v1/library/roots", s.Library.AddMagnet(b.Uri.Trim(), hash, b.Name ?? name));
+        });
+        lib.MapGet("/torrents", (DefinitionAcquisitionService a) => new TorrentSourcesDto(a.ClientName, a.Sources()));
+        lib.MapPatch("/torrents/{rootId:guid}", (Guid rootId, TorrentSourceOptionsBody b, StudioService s) => s.Library.SetSourceOptions(rootId, b.Enabled, b.Priority));
         lib.MapPatch("/roots/{rootId:guid}", (Guid rootId, UpdateLibraryRootBody b, StudioService s) => s.Library.UpdateRoot(rootId, b.Name, b.DownloadPath));
         lib.MapDelete("/roots/{rootId:guid}", (Guid rootId, StudioService s) => { s.Library.RemoveRoot(rootId); return Results.NoContent(); });
         lib.MapPost("/roots/{rootId:guid}/scan", (Guid rootId, StudioService s, ILoggerFactory logs) =>
         {
             if (s.Library.IsScanning(rootId)) throw new EcuStudioException("LIBRARY_BUSY", "This library location is already being scanned", 409);
-            var log = logs.CreateLogger("ECUStudio.Library");
-            _ = Task.Run(() =>
-            {
-                try { s.Library.Scan(rootId); }
-                catch (Exception ex) { log.LogWarning(ex, "Library scan of {RootId} failed", rootId); }
-            });
+            StartScan(s, rootId, logs);
             return Results.Accepted();
         });
+
+        // ---- automatic definition acquisition ----
+        var acq = api.MapGroup("/acquisition").WithTags("acquisition");
+        acq.MapGet("/settings", (DefinitionAcquisitionService a) => a.Settings);
+        acq.MapPut("/settings", (AcquisitionSettings b, DefinitionAcquisitionService a) => a.UpdateSettings(b));
+        projects.MapGet("/{id:guid}/definition/acquisition", async (Guid id, DefinitionAcquisitionService a, CancellationToken ct) =>
+            await a.StatusAsync(id, ct) is { } st ? Results.Ok(st) : Results.NoContent()).WithTags("acquisition").Produces<DefinitionAcquisition>();
+        projects.MapPost("/{id:guid}/definition/acquisition", async (Guid id, AcquisitionRequest? b, DefinitionAcquisitionService a, CancellationToken ct) =>
+            Results.Accepted(value: new JobStarted(await a.StartAsync(id, b ?? new AcquisitionRequest(), ct)))).WithTags("acquisition");
         lib.MapGet("/entries", (StudioService s, string? q, LibraryFormat? format, bool? definitionsOnly, int? offset, int? limit) =>
             s.Library.Search(q, format, definitionsOnly ?? false, offset ?? 0, limit ?? 100));
 
@@ -198,6 +221,17 @@ public static class StudioEndpoints
         a.MapGet("/candidates/{candidateId}/data", (Guid analysisId, string candidateId, StudioService s, CancellationToken ct) => s.CandidateDataAsync(analysisId, candidateId, ct));
         a.MapPost("/candidates/{candidateId}/hypotheses", (Guid analysisId, string candidateId, StudioService s, CancellationToken ct) => s.CandidateHypothesesAsync(analysisId, candidateId, ct)).WithTags("ai");
         return api;
+    }
+
+    private static void StartScan(StudioService s, Guid rootId, ILoggerFactory logs)
+    {
+        if (s.Library.IsScanning(rootId)) return;
+        var log = logs.CreateLogger("ECUStudio.Library");
+        _ = Task.Run(() =>
+        {
+            try { s.Library.Scan(rootId); }
+            catch (Exception ex) { log.LogWarning(ex, "Library scan of {RootId} failed", rootId); }
+        });
     }
 
     private static async Task<byte[]> ReadUpload(IFormFile file, CancellationToken ct)

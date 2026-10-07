@@ -106,7 +106,19 @@ public sealed record AxisDefinition
     public double Factor { get; init; } = 1;
     public double Offset { get; init; }
     public double[]? FixedValues { get; init; }
+    /// <summary>Physical limits declared by the definition (A2L AXIS_DESCR lower/upper), used to verify a definition against a binary.</summary>
+    public double? LowerLimit { get; init; }
+    public double? UpperLimit { get; init; }
 }
+
+/// <summary>One element of a record whose layout is resolved against the binary (A2L RECORD_LAYOUT).</summary>
+public sealed record RecordItem(string Kind, DataType Type);
+
+/// <summary>
+/// Record that stores its own axis point counts (Bosch "NO_AXIS_PTS_X/Y" layouts, e.g. <c>nx ny x[] y[] z[]</c>).
+/// The concrete size and offsets come from the counts in the binary, bounded by the maxima of the definition.
+/// </summary>
+public sealed record InlineRecord(int Address, IReadOnlyList<RecordItem> Items, int MaxCols, int MaxRows);
 
 public sealed record MapDefinition
 {
@@ -127,6 +139,13 @@ public sealed record MapDefinition
     public SourceType Source { get; init; } = SourceType.Unknown;
     public double Confidence { get; init; }
     public string? Description { get; init; }
+    /// <summary>Physical value limits declared by the definition (A2L CHARACTERISTIC lower/upper).</summary>
+    public double? LowerLimit { get; init; }
+    public double? UpperLimit { get; init; }
+    /// <summary>Set when sizes and offsets are read from counts stored in the binary.</summary>
+    public InlineRecord? Record { get; init; }
+    /// <summary>Address in the source definition when the map was relocated to fit another software version.</summary>
+    public int? SourceAddress { get; init; }
 
     public int ByteLength => Rows * Cols * DataType.Size();
     public MapCategory Category => Role.Category();

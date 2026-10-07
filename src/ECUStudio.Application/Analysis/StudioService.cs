@@ -222,6 +222,9 @@ public sealed partial class StudioService(
             try
             {
                 var session = await RunAnalysisAsync(project, modFile, stockFile, jobs.ProgressFor(jobId), CancellationToken.None);
+                // Started before "completed" so the page that reloads on completion already sees the definition search.
+                if (AnalysisCompleted is { } hook)
+                    try { await hook(projectId, modFile, session); } catch (Exception) { /* the search reports its own failures */ }
                 jobs.Publish(new JobEvent(jobId, "completed", null, JobStatus.Completed, null, session.Report.Id));
             }
             catch (Exception ex)
@@ -230,6 +233,19 @@ public sealed partial class StudioService(
             }
         }, CancellationToken.None);
         return jobId;
+    }
+
+    /// <summary>Called after a background analysis finished (wired to the automatic definition search).</summary>
+    public Func<Guid, ProjectFile, AnalysisSession, Task>? AnalysisCompleted { get; set; }
+
+    /// <summary>Re-runs the analysis with the default file selection and returns the new report id.</summary>
+    public async Task<Guid> ReanalyzeAsync(Guid projectId, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        var modFile = project.Files.LastOrDefault(f => f.Role == FileRole.Modified) ?? project.Files.LastOrDefault(f => f.Role != FileRole.Stock) ?? project.Stock
+            ?? throw new EcuStudioException("NO_FILES", "Project has no binaries");
+        var stockFile = project.Stock?.Id == modFile.Id ? null : project.Stock;
+        return (await RunAnalysisAsync(project, modFile, stockFile, null, ct)).Report.Id;
     }
 
     /// <summary>Synchronous analysis (CLI, tests, recompute after override).</summary>

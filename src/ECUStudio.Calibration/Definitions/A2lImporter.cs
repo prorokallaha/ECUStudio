@@ -31,7 +31,7 @@ public sealed class A2lImporter : IDefinitionImporter
         var compu = module.All("COMPU_METHOD").ToDictionary(b => b.Arg(0), b => b, StringComparer.Ordinal);
         var axisPts = module.All("AXIS_PTS").ToDictionary(b => b.Arg(0), b => b, StringComparer.Ordinal);
 
-        var raw = new List<(MapDefinition Def, long Address, long? XAddr, long? YAddr)>();
+        var raw = new List<(MapDefinition Def, long Address, long? XAddr, long? YAddr, long Record)>();
         var skipped = new List<string>();
         foreach (var c in module.All("CHARACTERISTIC"))
         {
@@ -59,6 +59,7 @@ public sealed class A2lImporter : IDefinitionImporter
             Address = Off(r.Address),
             XAxis = r.Def.XAxis is { Address: not null } x && r.XAddr is { } xa ? x with { Address = Off(xa) } : r.Def.XAxis,
             YAxis = r.Def.YAxis is { Address: not null } y && r.YAddr is { } ya ? y with { Address = Off(ya) } : r.Def.YAxis,
+            Record = r.Def.Record is { } rec ? rec with { Address = Off(r.Record) } : null,
         }).ToList();
 
         var notes = new List<string> { $"A2L: {maps.Count} characteristic(s) imported, {skipped.Count} skipped" };
@@ -66,10 +67,13 @@ public sealed class A2lImporter : IDefinitionImporter
             notes.Add("Some layouts store the axis point count in the binary: sizes are taken from MAX_AXIS_POINTS and must match the stored counts");
         if (rebase != 0) notes.Add($"ECU address base 0x{rebase:X8} subtracted to get file offsets; verify against the binary layout");
         notes.AddRange(skipped.Take(50).Select(s => "skipped " + s));
-        return new ExternalDefinition(SourceType.A2L, maps, fileName) { Notes = notes };
+        var modPar = module.Find("MOD_PAR");
+        var epk = modPar?.Keyword("EPK") is { Length: > 0 } e ? e.Trim() : null;
+        int? epkAddress = modPar?.Keyword("ADDR_EPK") is { } ea && TryParseLong(ea, out var eaddr) && eaddr - rebase is >= 0 and < int.MaxValue ? (int)(eaddr - rebase) : null;
+        return new ExternalDefinition(SourceType.A2L, maps, fileName) { Notes = notes, AxisCount = axisPts.Count, Epk = epk, EpkAddress = epkAddress };
     }
 
-    private static (MapDefinition, long, long?, long?)? Build(A2lBlock c, Dictionary<string, A2lBlock> layouts, Dictionary<string, A2lBlock> compu,
+    private static (MapDefinition, long, long?, long?, long)? Build(A2lBlock c, Dictionary<string, A2lBlock> layouts, Dictionary<string, A2lBlock> compu,
         Dictionary<string, A2lBlock> axisPts, bool bigEndianDefault)
     {
         // CHARACTERISTIC name "long id" type address deposit maxDiff conversion lower upper
@@ -130,7 +134,7 @@ public sealed class A2lImporter : IDefinitionImporter
                 {
                     var item = items.FirstOrDefault(i => i.Kind == $"AXIS_PTS_{letter}") ?? throw new A2lUnsupportedException($"STD_AXIS but layout has no AXIS_PTS_{letter}");
                     axisAddress = address + Offset(item.Kind);
-                    return new AxisDefinition { Name = label, Unit = au, Length = length, Address = 0, DataType = item.Type, Factor = af, Offset = ao };
+                    return new AxisDefinition { Name = label, Unit = au, Length = length, Address = 0, DataType = item.Type, Factor = af, Offset = ao, LowerLimit = Limit(d.Arg(4)), UpperLimit = Limit(d.Arg(5)) };
                 }
                 case "COM_AXIS" or "RES_AXIS" or "CURVE_AXIS":
                 {
@@ -145,7 +149,8 @@ public sealed class A2lImporter : IDefinitionImporter
                     foreach (var it in apItems) { if (it == pts) break; o += it.Type.Size(); }
                     var (cf, co, cu) = Conversion(compu, ap.Arg(6));
                     axisAddress = ParseLong(ap.Arg(2)) + o;
-                    return new AxisDefinition { Name = ap.Arg(3) is { Length: > 0 } q && q != "NO_INPUT_QUANTITY" ? q : refName, Unit = cu, Length = length, Address = 0, DataType = pts.Type, Factor = cf, Offset = co };
+                    return new AxisDefinition { Name = ap.Arg(3) is { Length: > 0 } q && q != "NO_INPUT_QUANTITY" ? q : refName, Unit = cu, Length = length, Address = 0, DataType = pts.Type, Factor = cf, Offset = co,
+                        LowerLimit = Limit(ap.Arg(8)), UpperLimit = Limit(ap.Arg(9)) };
                 }
                 default:
                     throw new A2lUnsupportedException($"axis attribute {attr}");
@@ -175,8 +180,13 @@ public sealed class A2lImporter : IDefinitionImporter
             YAxis = y,
             Source = SourceType.A2L,
             Confidence = 0.9,
+            LowerLimit = Limit(c.Arg(7)),
+            UpperLimit = Limit(c.Arg(8)),
+            // Counts stored in the binary: sizes above are the maxima; the binder reads the real ones per binary.
+            Record = items.Any(i => i.Kind is "NO_AXIS_PTS_X" or "NO_AXIS_PTS_Y")
+                ? new InlineRecord(0, items.Select(i => new RecordItem(i.Kind, i.Type)).ToList(), cols, rows) : null,
         };
-        return (def, address + Offset("FNC_VALUES"), xAddr, yAddr);
+        return (def, address + Offset("FNC_VALUES"), xAddr, yAddr, address);
     }
 
     private sealed record LayoutItem(string Kind, int Position, DataType Type, ValueOrder Order);
@@ -214,6 +224,15 @@ public sealed class A2lImporter : IDefinitionImporter
         list.Sort((a, b) => a.Position.CompareTo(b.Position));
         return list;
     }
+
+    private static bool TryParseLong(string token, out long value)
+    {
+        try { value = ParseLong(token); return true; }
+        catch (Exception ex) when (ex is FormatException or OverflowException or DefinitionException or A2lUnsupportedException) { value = 0; return false; }
+    }
+
+    private static double? Limit(string token) =>
+        double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v) ? v : null;
 
     private static (double Factor, double Offset, string Unit) Conversion(Dictionary<string, A2lBlock> compu, string name)
     {

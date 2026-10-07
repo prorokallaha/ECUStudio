@@ -7,7 +7,8 @@ namespace ECUStudio.Application.Analysis;
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<JobStatus>))]
 public enum JobStatus { Queued, Running, Completed, Failed }
 
-public sealed record JobEvent(Guid JobId, string Kind, StepProgress? Step, JobStatus Status, string? Error = null, Guid? AnalysisId = null);
+public sealed record JobEvent(Guid JobId, string Kind, StepProgress? Step, JobStatus Status, string? Error = null, Guid? AnalysisId = null,
+    Acquisition.TransferInfo? Transfer = null);
 
 /// <summary>Tracks long-running jobs and fans out progress to SSE subscribers. Late subscribers get the history replayed.</summary>
 public sealed class JobTracker

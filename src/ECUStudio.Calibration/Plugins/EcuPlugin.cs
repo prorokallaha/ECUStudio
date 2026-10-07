@@ -37,6 +37,9 @@ public sealed record DefinitionResolution(
     string Source,
     IReadOnlyList<string> Notes)
 {
+    /// <summary><see cref="Source"/> when no definition was found and maps come from structure scanning only.</summary>
+    public const string ScanOnly = "Signature scan only";
+
     /// <summary>Checksum blocks described by the resolved definition (empty when none are known).</summary>
     public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
 }
@@ -79,6 +82,11 @@ public sealed record ExternalDefinition(SourceType Source, IReadOnlyList<MapDefi
     public IReadOnlyList<string> Notes { get; init; } = [];
     /// <summary>Checksum blocks described by the definition file (native JSON only).</summary>
     public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
+    /// <summary>Shared axis objects declared by the definition (A2L AXIS_PTS).</summary>
+    public int AxisCount { get; init; }
+    /// <summary>EPROM identifier the definition was made for (A2L MOD_PAR EPK) and its file offset (ADDR_EPK, rebased).</summary>
+    public string? Epk { get; init; }
+    public int? EpkAddress { get; init; }
 }
 
 public sealed class PluginRegistry

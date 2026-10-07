@@ -1,4 +1,5 @@
 using ECUStudio.AI;
+using ECUStudio.Application.Acquisition;
 using ECUStudio.Application.Analysis;
 using ECUStudio.Application.DevTools;
 using ECUStudio.Application.Library;
@@ -7,6 +8,7 @@ using ECUStudio.Calibration.Definitions;
 using ECUStudio.Calibration.Plugins;
 using ECUStudio.Calibration.Plugins.Edc16U34;
 using ECUStudio.Infrastructure.Persistence;
+using ECUStudio.Infrastructure.Torrents;
 using ECUStudio.Simulation;
 using ECUStudio.Vehicle;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +33,11 @@ public sealed record EcuStudioOptions
     public string? LibraryPath { get; init; }
     /// <summary>When non-empty, only directories under these paths can be added to the library (server deployments).</summary>
     public IReadOnlyList<string> LibraryAllowedRoots { get; init; } = [];
+    /// <summary>
+    /// Directory that serves torrent files instead of the BitTorrent network (offline machines, tests):
+    /// &lt;dir&gt;/&lt;path in torrent&gt;. Null: MonoTorrent.
+    /// </summary>
+    public string? TorrentMirrorPath { get; init; } = Environment.GetEnvironmentVariable("ECUSTUDIO_TORRENT_MIRROR");
 
     public static string DefaultSqlitePath()
     {
@@ -38,6 +45,9 @@ public sealed record EcuStudioOptions
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, "ecustudio.db");
     }
+
+    public static string DefaultCachePath() =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ECUStudio", "DefinitionCache");
 
     public static string DefaultLibraryPath() =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ECUStudio", "library");
@@ -97,9 +107,43 @@ public static class EcuStudioServices
             ? new InMemoryMapKnowledgeStore()
             : new JsonFileMapKnowledgeStore(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath()));
         services.AddSingleton(new LibraryPolicy(options.LibraryAllowedRoots));
+        var inMemoryLibrary = options.Storage.Equals("memory", StringComparison.OrdinalIgnoreCase) && options.LibraryPath is null;
+        IAcquisitionStore acquisitionStore = inMemoryLibrary ? new InMemoryAcquisitionStore() : new JsonFileAcquisitionStore(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath());
+        services.AddSingleton(acquisitionStore);
+        var cachePath = acquisitionStore.LoadSettings().CachePath is { Length: > 0 } configured ? configured
+            : inMemoryLibrary ? Path.Combine(Path.GetTempPath(), "ecustudio-definition-cache", Guid.NewGuid().ToString("N"))
+            : options.LibraryPath is { } lp ? Path.Combine(lp, "DefinitionCache") : EcuStudioOptions.DefaultCachePath();
+        services.AddSingleton(new LibraryCacheLocation(cachePath));
         services.AddSingleton<DefinitionLibrary>();
         services.AddSingleton<DefinitionService>();
-        services.AddSingleton<StudioService>();
+        services.AddSingleton<DefinitionCache>();
+        if (!string.IsNullOrWhiteSpace(options.TorrentMirrorPath))
+            services.AddSingleton<ITorrentClient>(new LocalMirrorTorrentClient(options.TorrentMirrorPath));
+        else
+            services.AddSingleton<ITorrentClient>(_ => new MonoTorrentClient(new MonoTorrentOptions
+            {
+                StateDirectory = Path.Combine(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath(), "torrent-state"),
+            }));
+        services.AddSingleton(sp =>
+        {
+            var studio = ActivatorUtilities.CreateInstance<StudioService>(sp);
+            // A finished analysis without definition maps starts the automatic search (the service decides whether it may).
+            studio.AnalysisCompleted = async (projectId, file, session) =>
+            {
+                if (session.Report.DefinitionSource != ECUStudio.Calibration.Plugins.DefinitionResolution.ScanOnly) return;
+                var acquisition = sp.GetRequiredService<DefinitionAcquisitionService>();
+                if (await sp.GetRequiredService<IProjectStore>().GetAsync(projectId) is { } project)
+                    await acquisition.MaybeStartAfterAnalysisAsync(project, file, file.Sha256);
+            };
+            return studio;
+        });
+        services.AddSingleton(sp =>
+        {
+            var acquisition = ActivatorUtilities.CreateInstance<DefinitionAcquisitionService>(sp);
+            var studio = sp.GetRequiredService<StudioService>();
+            acquisition.Reanalyze = async (projectId, ct) => await studio.ReanalyzeAsync(projectId, ct);
+            return acquisition;
+        });
         return services;
     }
 

@@ -83,6 +83,9 @@ public sealed record LibraryPolicy(IReadOnlyList<string> AllowedRoots)
     }
 }
 
+/// <summary>Directory of the definition cache (files fetched from torrent sources).</summary>
+public sealed record LibraryCacheLocation(string? Path);
+
 public sealed record LibrarySearchResult(int Total, IReadOnlyList<LibraryEntry> Entries);
 
 /// <summary>
@@ -102,12 +105,24 @@ public sealed class DefinitionLibrary
     private readonly ConcurrentDictionary<Guid, ScanState> _state = new();
     private LibraryIndex _index;
 
-    public DefinitionLibrary(IDefinitionLibraryStore store, LibraryPolicy? policy = null)
+    public DefinitionLibrary(IDefinitionLibraryStore store, LibraryPolicy? policy = null, LibraryCacheLocation? cache = null)
     {
         _store = store;
         _policy = policy ?? LibraryPolicy.Unrestricted;
         _index = store.Load();
+        CacheDirectory = cache?.Path;
     }
+
+    /// <summary>Where files fetched from torrent sources without their own download directory are stored.</summary>
+    public string? CacheDirectory { get; set; }
+
+    /// <summary>Directory holding the payload of a torrent source: its own download directory, else the definition cache.</summary>
+    public string? DownloadDirectory(LibraryRoot root) => root.Kind != LibraryRootKind.Torrent ? root.Path
+        : root.DownloadPath ?? (CacheDirectory is { } c ? Path.Combine(c, root.InfoHash ?? root.Id.ToString("N")) : null);
+
+    public LibraryRoot RootById(Guid id) => Root(id);
+
+    public byte[]? TorrentBytes(Guid rootId) => _store.LoadTorrent(rootId);
 
     public IReadOnlyList<LibraryRootStatus> Roots()
     {
@@ -149,9 +164,19 @@ public sealed class DefinitionLibrary
             if (!Directory.Exists(download)) throw new EcuStudioException("LIBRARY_PATH", $"Directory not found: {download}");
             _policy.EnsureAllowed(download);
         }
-        var root = new LibraryRoot { Id = Guid.NewGuid(), Kind = LibraryRootKind.Torrent, Path = Path.GetFileName(fileName), DownloadPath = download, Name = meta.Name };
+        var root = new LibraryRoot { Id = Guid.NewGuid(), Kind = LibraryRootKind.Torrent, Path = Path.GetFileName(fileName), DownloadPath = download, Name = meta.Name, InfoHash = meta.InfoHash };
         lock (_lock)
         {
+            if (_index.Roots.FirstOrDefault(r => r.InfoHash == meta.InfoHash) is { } existing)
+            {
+                // A magnet source waiting for metadata becomes complete; a known torrent is not added twice.
+                if (existing.MagnetUri is null || _store.LoadTorrent(existing.Id) is not null)
+                    throw new EcuStudioException("LIBRARY_DUPLICATE", $"This torrent is already a source ({existing.Name})");
+                _store.SaveTorrent(existing.Id, torrent);
+                var completed = existing with { Name = meta.Name, Path = Path.GetFileName(fileName) };
+                Commit(_index with { Roots = _index.Roots.Select(r => r.Id == existing.Id ? completed : r).ToList() });
+                return completed;
+            }
             _store.SaveTorrent(root.Id, torrent);
             Commit(_index with { Roots = [.. _index.Roots, root] });
         }
@@ -167,6 +192,68 @@ public sealed class DefinitionLibrary
         _policy.EnsureAllowed(Path.GetDirectoryName(full)!);
         if (new FileInfo(full).Length > TorrentMetadata.MaxTorrentBytes) throw new EcuStudioException("LIBRARY_TOO_LARGE", ".torrent file is larger than 256 MB");
         return AddTorrent(Path.GetFileName(full), File.ReadAllBytes(full), downloadPath);
+    }
+
+    /// <summary>Adds a magnet link; its file list is indexed once the metadata has been fetched from the swarm.</summary>
+    public LibraryRoot AddMagnet(string magnetUri, string? hash, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(hash)) throw new EcuStudioException("MAGNET_INVALID", "Magnet link has no info hash");
+        lock (_lock)
+        {
+            if (_index.Roots.Any(r => r.InfoHash == hash)) throw new EcuStudioException("LIBRARY_DUPLICATE", "This torrent is already a source");
+            var root = new LibraryRoot { Id = Guid.NewGuid(), Kind = LibraryRootKind.Torrent, Path = "magnet", MagnetUri = magnetUri, InfoHash = hash, Name = name ?? hash };
+            Commit(_index with { Roots = [.. _index.Roots, root] });
+            return root;
+        }
+    }
+
+    /// <summary>Stores metadata fetched for a magnet source.</summary>
+    public LibraryRoot SetTorrentMetadata(Guid rootId, byte[] torrent)
+    {
+        var meta = TorrentMetadata.Parse(torrent);
+        lock (_lock)
+        {
+            var root = Root(rootId);
+            if (root.InfoHash is { } h && h != meta.InfoHash) throw new EcuStudioException("TORRENT_METADATA", "Fetched metadata does not belong to this magnet link");
+            _store.SaveTorrent(rootId, torrent);
+            var updated = root with { Name = root.Name == root.InfoHash ? meta.Name : root.Name, InfoHash = meta.InfoHash };
+            Commit(_index with { Roots = _index.Roots.Select(r => r.Id == rootId ? updated : r).ToList() });
+            return updated;
+        }
+    }
+
+    public LibraryRoot SetSourceOptions(Guid rootId, bool? enabled, int? priority)
+    {
+        lock (_lock)
+        {
+            var root = Root(rootId);
+            root = root with { Enabled = enabled ?? root.Enabled, Priority = priority ?? root.Priority };
+            Commit(_index with { Roots = _index.Roots.Select(r => r.Id == rootId ? root : r).ToList() });
+            return root;
+        }
+    }
+
+    /// <summary>Marks fetched torrent files available and reads their identifiers from the content.</summary>
+    public IReadOnlyList<LibraryEntry> MarkDownloaded(Guid rootId, IReadOnlyCollection<string> relativePaths)
+    {
+        lock (_lock)
+        {
+            var root = Root(rootId);
+            var dir = DownloadDirectory(root) ?? throw new EcuStudioException("LIBRARY_UNAVAILABLE", "No download directory for this source");
+            var updated = new List<LibraryEntry>();
+            var entries = _index.Entries.Select(e =>
+            {
+                if (e.RootId != rootId || !relativePaths.Contains(e.RelativePath)) return e;
+                var local = Path.Combine(dir, e.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(local)) return e;
+                var info = new FileInfo(local);
+                var analysed = LibraryScanner.Analyze(rootId, e.RelativePath, local, e.Format, info.Length, info.LastWriteTimeUtc, LibraryScanner.Identify(e.RelativePath));
+                updated.Add(analysed);
+                return analysed;
+            }).ToList();
+            Commit(_index with { Entries = entries });
+            return updated;
+        }
     }
 
     public LibraryRoot UpdateRoot(Guid rootId, string? name, string? downloadPath)
@@ -212,8 +299,9 @@ public sealed class DefinitionLibrary
             if (root.Kind == LibraryRootKind.Directory) entries = _scanner.ScanDirectory(root, previous, ct).ToList();
             else
             {
-                var torrent = _store.LoadTorrent(rootId) ?? throw new EcuStudioException("LIBRARY_TORRENT", "Stored .torrent file is missing: add it again");
-                entries = _scanner.ScanTorrent(root, TorrentMetadata.Parse(torrent), previous, ct).ToList();
+                var torrent = _store.LoadTorrent(rootId) ?? throw new EcuStudioException("LIBRARY_TORRENT", root.MagnetUri is not null
+                    ? "Torrent metadata has not been fetched yet" : "Stored .torrent file is missing: add it again");
+                entries = _scanner.ScanTorrent(root with { DownloadPath = DownloadDirectory(root) }, TorrentMetadata.Parse(torrent), previous, ct).ToList();
             }
             lock (_lock)
             {
@@ -257,7 +345,13 @@ public sealed class DefinitionLibrary
         return new LibrarySearchResult(list.Count, list.OrderBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase).Skip(Math.Max(0, offset)).Take(Math.Clamp(limit, 1, 500)).ToList());
     }
 
-    public IReadOnlyList<DefinitionMatch> Match(BinaryKey key, int limit = 50) => DefinitionMatcher.Match(key, _index.Entries, limit);
+    /// <summary>Matches over enabled sources only.</summary>
+    public IReadOnlyList<DefinitionMatch> Match(BinaryKey key, int limit = 50)
+    {
+        var index = _index;
+        var disabled = index.Roots.Where(r => !r.Enabled).Select(r => r.Id).ToHashSet();
+        return DefinitionMatcher.Match(key, disabled.Count == 0 ? index.Entries : index.Entries.Where(e => !disabled.Contains(e.RootId)), limit);
+    }
 
     public LibraryEntry Entry(string entryId) =>
         _index.Entries.FirstOrDefault(e => e.Id == entryId) ?? throw new NotFoundException($"Library entry {entryId} not found");
@@ -277,8 +371,7 @@ public sealed class DefinitionLibrary
     private string ResolvePath(LibraryEntry entry)
     {
         var root = Root(entry.RootId);
-        var baseDir = root.Kind == LibraryRootKind.Directory ? root.Path
-            : root.DownloadPath ?? throw new EcuStudioException("LIBRARY_UNAVAILABLE", "Set the torrent download directory first");
+        var baseDir = DownloadDirectory(root) ?? throw new EcuStudioException("LIBRARY_UNAVAILABLE", "Set the torrent download directory first");
         var full = Path.GetFullPath(Path.Combine(baseDir, entry.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
         var prefix = Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         if (!full.StartsWith(prefix, StringComparison.Ordinal)) throw new EcuStudioException("LIBRARY_PATH", "Entry path escapes its library location");

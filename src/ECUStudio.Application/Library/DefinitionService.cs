@@ -17,6 +17,8 @@ public enum DefinitionOrigin
     Library,
     /// <summary>Picked automatically from the library for this binary (Exact/Strong match only).</summary>
     AutoLibrary,
+    /// <summary>Found, fetched from a torrent source if needed, verified and bound automatically.</summary>
+    Acquired,
 }
 
 /// <summary>A definition bound to a project.</summary>
@@ -35,6 +37,12 @@ public sealed record ProjectDefinition
     /// <summary>Binary the compatibility was checked against.</summary>
     public string? CheckedAgainst { get; init; }
     public DateTimeOffset BoundAt { get; init; } = DateTimeOffset.UtcNow;
+    /// <summary>File inside an archive (zip) the definition was read from.</summary>
+    public string? ArchivePath { get; init; }
+    /// <summary>Full verification against the binary (score, evidence, conflicts, relocated maps).</summary>
+    public DefinitionCompatibilityResult? Verification { get; init; }
+    public MatchConfidence? MatchConfidence { get; init; }
+    public string? TorrentHash { get; init; }
 }
 
 /// <summary>What the analysis used as its external definition, and why. Stored in the report.</summary>
@@ -49,7 +57,12 @@ public sealed record DefinitionBinding
     public CompatibilityReport? Compatibility { get; init; }
     /// <summary>False when the definition was found but not applied (incompatible, unreadable, not importable).</summary>
     public bool Applied { get; init; }
+    public DefinitionCompatibilityResult? Verification { get; init; }
+    public string? ArchivePath { get; init; }
 }
+
+/// <summary>A definition file read from the library, unpacked from an archive when needed.</summary>
+public sealed record DefinitionSource(string Name, LibraryFormat Format, byte[] Content, string? ArchivePath);
 
 /// <summary>Result of reading a definition before binding it.</summary>
 public sealed record DefinitionPreview
@@ -75,6 +88,50 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
 {
     public DefinitionLibrary Library => library;
 
+    // Parsed definitions by content hash: a large A2L is parsed once per process, not per analysis.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ExternalDefinition> _parsed = new();
+
+    /// <summary>Imports (or reuses the parsed) definition for this content.</summary>
+    public ExternalDefinition Import(string name, byte[] content)
+    {
+        var key = Hashing.Sha256Hex(content) + "|" + name;
+        if (_parsed.TryGetValue(key, out var cached)) return cached;
+        var def = DefinitionImporters.Import(name, DecodeText(content));
+        if (_parsed.Count > 8) _parsed.Clear();
+        _parsed[key] = def;
+        return def;
+    }
+
+    /// <summary>Reads a library entry; for a zip, the importable definition inside it (A2L preferred).</summary>
+    public DefinitionSource ReadDefinition(string entryId, string? archivePath = null)
+    {
+        var (entry, content) = library.Read(entryId);
+        var name = Path.GetFileName(entry.RelativePath);
+        if (entry.Format != LibraryFormat.Archive) return new DefinitionSource(name, entry.Format, content, null);
+        if (!name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) throw new DefinitionException($"{name}: only zip archives can be opened");
+        using var zip = new System.IO.Compression.ZipArchive(new MemoryStream(content), System.IO.Compression.ZipArchiveMode.Read);
+        var candidates = zip.Entries.Where(e => e.Length > 0 && IsImportable(LibraryScanner.FormatOf(e.FullName))).ToList();
+        var chosen = archivePath is not null ? zip.GetEntry(archivePath)
+            : candidates.OrderBy(e => LibraryScanner.FormatOf(e.FullName) switch { LibraryFormat.A2L => 0, LibraryFormat.EcuDef => 1, _ => 2 }).ThenByDescending(e => e.Length).FirstOrDefault();
+        if (chosen is null)
+        {
+            var inside = string.Join(", ", zip.Entries.Select(e => Path.GetExtension(e.Name)).Where(x => x.Length > 0).Distinct().Take(8));
+            throw new DefinitionException($"{name} contains no importable definition (A2L/XDF){(inside.Length > 0 ? $"; it has {inside}" : "")}");
+        }
+        if (chosen.Length > DefinitionLibrary.MaxImportBytes) throw new EcuStudioException("LIBRARY_TOO_LARGE", $"{chosen.FullName} is too large");
+        using var s = chosen.Open();
+        using var ms = new MemoryStream();
+        s.CopyTo(ms);
+        return new DefinitionSource(chosen.Name, LibraryScanner.FormatOf(chosen.FullName), ms.ToArray(), chosen.FullName);
+    }
+
+    /// <summary>Imports and verifies a definition against a binary; only the maps that fit are kept.</summary>
+    public VerifiedDefinition Verify(ExternalDefinition def, BinaryImage image, LibraryIdentifiers ids)
+    {
+        var (plugin, _) = plugins.Detect(image);
+        return DefinitionVerifier.Verify(def, image, plugin.Identify(image), ids);
+    }
+
     public static string DecodeText(byte[] content)
     {
         try { return new UTF8Encoding(false, throwOnInvalidBytes: true).GetString(content); }
@@ -86,7 +143,7 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
         var (plugin, _) = plugins.Detect(image);
         var ident = plugin.Identify(image);
         var engine = Vehicle.Resolution.EcuIdentificationProvider.ParseEngineText(ident.EngineCode.Text) is { } e ? e.Litres : null;
-        return new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, engine, Text(ident.ProjectCode));
+        return new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, engine, Text(ident.ProjectCode), Text(ident.SoftwareVersion));
     }
 
     public DefinitionPreview Preview(string fileName, byte[] content, BinaryImage? target)
@@ -109,7 +166,7 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
         return preview with
         {
             MapCount = def.Maps.Count, Notes = def.Notes,
-            Compatibility = target is null || ident is null ? null : DefinitionCompatibility.Check(def, target, ident, ids),
+            Compatibility = target is null || ident is null ? null : DefinitionVerifier.Verify(def, target, ident, ids).Result.ToReport(),
         };
     }
 
@@ -127,24 +184,29 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
 
     private ResolvedDefinition FromBinding(ProjectDefinition bound, Func<Guid, byte[]?> projectContent, BinaryImage image, EcuIdentification ident)
     {
-        byte[]? content;
+        DefinitionSource? source;
         try
         {
-            content = bound.Origin == DefinitionOrigin.Upload ? projectContent(bound.Id)
-                : bound.LibraryEntryId is { } id ? library.Read(id).Content : null;
+            source = bound.Origin == DefinitionOrigin.Upload
+                ? projectContent(bound.Id) is { } c ? new DefinitionSource(bound.Name, bound.Format, c, null) : null
+                : bound.LibraryEntryId is { } id ? ReadDefinition(id, bound.ArchivePath) : null;
         }
-        catch (EcuStudioException ex)
+        catch (Exception ex) when (ex is EcuStudioException or IOException or InvalidDataException or UnauthorizedAccessException)
         {
             return new(null, Binding(bound, applied: false, compat: null, reasons: [ex.Message]), [$"Bound definition {bound.Name} could not be read: {ex.Message}"]);
         }
-        if (content is null) return new(null, Binding(bound, false, null, ["definition content is missing"]), [$"Bound definition {bound.Name} is missing"]);
+        if (source is null) return new(null, Binding(bound, false, null, ["definition content is missing"]), [$"Bound definition {bound.Name} is missing"]);
         try
         {
-            var def = DefinitionImporters.Import(bound.Name, DecodeText(content));
-            var compat = DefinitionCompatibility.Check(def, image, ident, bound.Identifiers);
-            // A definition the user bound explicitly is applied even with warnings; the report shows them.
-            var notes = compat.Status == CompatibilityStatus.Compatible ? [] : compat.Reasons.Select(r => $"Bound definition {bound.Name}: {r}").ToList();
-            return new(def, Binding(bound, true, compat, ["bound to the project by the user"]), notes);
+            var def = Import(source.Name, source.Content);
+            var verified = DefinitionVerifier.Verify(def, image, ident, bound.Identifiers);
+            var result = verified.Result;
+            // Only the maps that fit this binary are used; the report lists the rest.
+            var notes = result.Status is DefinitionFit.Exact or DefinitionFit.Compatible && result.InvalidMaps == 0 ? new List<string>()
+                : [.. result.Conflicts.Select(r => $"Definition {bound.Name}: {r}")];
+            if (result.RelocatedMaps > 0) notes.Add($"Definition {bound.Name}: {result.RelocatedMaps} map(s) relocated for this software version");
+            var reasons = bound.Origin == DefinitionOrigin.Acquired ? ["found and verified automatically"] : new[] { "bound to the project by the user" };
+            return new(verified.Definition, Binding(bound, verified.Definition.Maps.Count > 0, result.ToReport(), reasons) with { Verification = result }, notes);
         }
         catch (DefinitionException ex)
         {
@@ -154,7 +216,7 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
 
     private ResolvedDefinition FromLibrary(BinaryImage image, EcuIdentification ident)
     {
-        var key = new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, null, Text(ident.ProjectCode));
+        var key = new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, null, Text(ident.ProjectCode), Text(ident.SoftwareVersion));
         var matches = library.Match(key, 20).Where(m => m.IsDefinition && m.Level <= MatchLevel.Strong).ToList();
         if (matches.Count == 0) return new(null, null, []);
         var notes = new List<string>();
@@ -164,19 +226,20 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
             if (!m.Entry.Available) { notes.Add($"Library entry {m.Entry.RelativePath} ({m.Level}) is not downloaded yet"); continue; }
             try
             {
-                var (_, content) = library.Read(m.Entry.Id);
-                var def = DefinitionImporters.Import(Path.GetFileName(m.Entry.RelativePath), DecodeText(content));
-                var compat = DefinitionCompatibility.Check(def, image, ident, m.Entry.Identifiers);
+                var source = ReadDefinition(m.Entry.Id);
+                var def = Import(source.Name, source.Content);
+                var verified = DefinitionVerifier.Verify(def, image, ident, m.Entry.Identifiers);
                 var binding = new DefinitionBinding
                 {
                     Origin = DefinitionOrigin.AutoLibrary, Name = m.Entry.RelativePath, Format = m.Entry.Format, LibraryEntryId = m.Entry.Id,
-                    Level = m.Level, Reasons = m.Reasons, Compatibility = compat, Applied = compat.Status != CompatibilityStatus.Incompatible,
+                    Level = m.Level, Reasons = m.Reasons, Compatibility = verified.Result.ToReport(), Verification = verified.Result,
+                    Applied = verified.Result.Status is DefinitionFit.Exact or DefinitionFit.Compatible,
                 };
-                if (!binding.Applied) { notes.Add($"Library definition {m.Entry.RelativePath} matched ({m.Level}) but failed the compatibility check: {string.Join("; ", compat.Reasons)}"); continue; }
+                if (!binding.Applied) { notes.Add($"Library definition {m.Entry.RelativePath} matched ({m.Level}) but did not pass verification ({verified.Result.Status}, {verified.Result.Score} %)"); continue; }
                 notes.Add($"Definition {m.Entry.RelativePath} picked from the library ({m.Level}: {string.Join(", ", m.Reasons)})");
-                return new(def with { Name = Path.GetFileName(m.Entry.RelativePath) }, binding, notes);
+                return new(verified.Definition with { Name = source.Name }, binding, notes);
             }
-            catch (Exception ex) when (ex is EcuStudioException or IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is EcuStudioException or IOException or UnauthorizedAccessException or InvalidDataException)
             {
                 notes.Add($"Library definition {m.Entry.RelativePath} could not be used: {ex.Message}");
             }
@@ -192,9 +255,13 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
     private static DefinitionBinding Binding(ProjectDefinition d, bool applied, CompatibilityReport? compat, IReadOnlyList<string> reasons) => new()
     {
         Origin = d.Origin, Name = d.Name, Format = d.Format, LibraryEntryId = d.LibraryEntryId, Reasons = reasons, Compatibility = compat ?? d.Compatibility, Applied = applied,
+        Verification = d.Verification, ArchivePath = d.ArchivePath,
     };
 
     public static bool IsImportable(LibraryFormat f) => f is LibraryFormat.A2L or LibraryFormat.Xdf or LibraryFormat.EcuDef;
+
+    /// <summary>Formats an acquisition may fetch: importable definitions and zip archives that may hold one.</summary>
+    public static bool IsAcquirable(LibraryEntry e) => IsImportable(e.Format) || e.Format == LibraryFormat.Archive && e.RelativePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
 
     public static string NotImportableReason(LibraryFormat f) => f switch
     {

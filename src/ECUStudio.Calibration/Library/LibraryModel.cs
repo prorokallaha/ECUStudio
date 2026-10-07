@@ -41,6 +41,14 @@ public sealed record LibraryRoot
     /// <summary>For torrents: directory where the client stores the payload (optional).</summary>
     public string? DownloadPath { get; init; }
     public string? Name { get; init; }
+    /// <summary>Torrent sources: BitTorrent v1 info hash (hex), known once metadata is available.</summary>
+    public string? InfoHash { get; init; }
+    /// <summary>Torrent sources added from a magnet link (metadata is fetched before the file list is known).</summary>
+    public string? MagnetUri { get; init; }
+    /// <summary>Disabled sources are kept but not searched.</summary>
+    public bool Enabled { get; init; } = true;
+    /// <summary>Lower runs first when several sources offer an equally good file.</summary>
+    public int Priority { get; init; }
     public DateTimeOffset AddedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastScanAt { get; init; }
     public int FileCount { get; init; }
@@ -58,6 +66,8 @@ public sealed record LibraryIdentifiers
     public IReadOnlyList<string> EngineHints { get; init; } = [];
     /// <summary>Bosch project codes ("HAXE"): from a "1037…P…XXXX" SW string or an archive folder ".../SW/XXXX/...".</summary>
     public IReadOnlyList<string> ProjectCodes { get; init; } = [];
+    /// <summary>VAG software versions written right after a part number ("03G906021MR_9351").</summary>
+    public IReadOnlyList<string> SoftwareVersions { get; init; } = [];
 
     public bool IsEmpty => SoftwareNumbers.Count + HardwareNumbers.Count + OemNumbers.Count + EcuFamilies.Count + EngineHints.Count + ProjectCodes.Count == 0;
 }
@@ -87,13 +97,28 @@ public sealed record LibraryEntry
 [JsonConverter(typeof(JsonStringEnumConverter<MatchLevel>))]
 public enum MatchLevel { Exact, Strong, Probable, Weak, Unknown }
 
+/// <summary>How sure a match is, for deciding whether a definition may be fetched without asking.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<MatchConfidence>))]
+public enum MatchConfidence { Exact, VeryHigh, High, Medium, Low }
+
 /// <summary>A library entry matched against a binary, with the reasons.</summary>
-public sealed record DefinitionMatch(LibraryEntry Entry, MatchLevel Level, double Score, IReadOnlyList<string> Reasons)
+/// <param name="Rank">Search rank: 1 project + SW/version, 2 OEM SW + SW, 3 project + other version, 4 family + OEM SW, 6 family only.</param>
+public sealed record DefinitionMatch(LibraryEntry Entry, MatchLevel Level, double Score, IReadOnlyList<string> Reasons, int Rank = 6)
 {
+    public MatchConfidence Confidence => Rank switch
+    {
+        <= 1 => Level == MatchLevel.Exact ? MatchConfidence.Exact : MatchConfidence.VeryHigh,
+        2 => MatchConfidence.VeryHigh,
+        3 => MatchConfidence.High,
+        4 => MatchConfidence.Medium,
+        _ => MatchConfidence.Low,
+    };
+
     public bool IsDefinition => Entry.Format is LibraryFormat.A2L or LibraryFormat.Damos or LibraryFormat.Xdf or LibraryFormat.EcuDef or LibraryFormat.Kp;
     /// <summary>True when the format can be imported now (A2L, XDF, native JSON).</summary>
     public bool Importable => Entry.Format is LibraryFormat.A2L or LibraryFormat.Xdf or LibraryFormat.EcuDef;
 }
 
 /// <summary>What the binary is matched with.</summary>
-public sealed record BinaryKey(string? SoftwareNumber, string? HardwareNumber, string? OemNumber, string? EcuFamily, string? Sha256, string? EngineHint, string? ProjectCode = null);
+public sealed record BinaryKey(string? SoftwareNumber, string? HardwareNumber, string? OemNumber, string? EcuFamily, string? Sha256, string? EngineHint,
+    string? ProjectCode = null, string? SoftwareVersion = null);

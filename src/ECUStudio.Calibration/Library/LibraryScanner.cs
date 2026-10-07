@@ -21,7 +21,9 @@ public sealed partial class LibraryScanner
 
     [GeneratedRegex(@"(?<![0-9])103[79]\d{6}(?![0-9])")] private static partial Regex BoschSwRegex();
     [GeneratedRegex(@"(?<![0-9])02[68]1\d{6}(?![0-9])")] private static partial Regex BoschHwRegex();
-    [GeneratedRegex(@"(?<![0-9A-Z])[0-9][0-9A-Z]{2}[ _.-]?9(?:06|07)[ _.-]?\d{3}[ _.-]?[A-Z]{0,3}(?![0-9A-Z])")] private static partial Regex VagOemRegex();
+    [GeneratedRegex(@"(?<![0-9A-Z])[0-9][0-9A-Z]{2}[ _.+-]?9(?:06|07)[ _.+-]?\d{3}[ _.+-]?[A-Z]{0,3}(?![0-9A-Z])")] private static partial Regex VagOemRegex();
+    /// <summary>Four-digit software version directly after a VAG part number.</summary>
+    [GeneratedRegex(@"^[ _.+-]{1,3}(\d{4})(?![0-9])")] private static partial Regex VersionAfterOemRegex();
     [GeneratedRegex(@"(?<![A-Z])(EDC1[5-7][A-Z]{0,2}\d{0,2}|MED?1[57][.]?\d{0,2}|ME7[.]\d(?:[.]\d)?|MED9[.]?\d{0,2}|SIMOS\s?\d{1,2}(?:[.]\d)?|PPD1[.]\d|SID\d{3}|DCM\d[.]\d[A-Z]?)(?![A-Z0-9])", RegexOptions.IgnoreCase)]
     private static partial Regex EcuFamilyRegex();
     [GeneratedRegex(@"(?<![0-9])([1-6][.,]\d)\s?(TDI|TSI|TFSI|CDI|HDI|DCI|CRDI|D|L)(?![A-Z])", RegexOptions.IgnoreCase)]
@@ -65,6 +67,9 @@ public sealed partial class LibraryScanner
             EcuFamilies = All(EcuFamilyRegex(), text, m => m.Value.ToUpperInvariant().Replace(" ", "", StringComparison.Ordinal)),
             EngineHints = All(EngineRegex(), text, m => $"{m.Groups[1].Value.Replace(',', '.')} {m.Groups[2].Value.ToUpperInvariant()}"),
             ProjectCodes = All(ProjectInSwRegex(), text, m => m.Groups[1].Value).Union(All(ProjectFolderRegex(), text, m => m.Groups[1].Value)).ToList(),
+            SoftwareVersions = VagOemRegex().Matches(text)
+                .Select(m => VersionAfterOemRegex().Match(text.AsSpan(m.Index + m.Length, Math.Min(8, text.Length - m.Index - m.Length)).ToString()))
+                .Where(v => v.Success).Select(v => v.Groups[1].Value).Distinct().Take(8).ToList(),
         };
     }
 
@@ -78,6 +83,7 @@ public sealed partial class LibraryScanner
         EcuFamilies = a.EcuFamilies.Union(b.EcuFamilies, StringComparer.OrdinalIgnoreCase).ToList(),
         EngineHints = a.EngineHints.Union(b.EngineHints, StringComparer.OrdinalIgnoreCase).ToList(),
         ProjectCodes = a.ProjectCodes.Union(b.ProjectCodes).ToList(),
+        SoftwareVersions = a.SoftwareVersions.Union(b.SoftwareVersions).ToList(),
     };
 
     /// <summary>Scans a directory. <paramref name="previous"/> (by relative path) lets unchanged files skip content analysis.</summary>

@@ -61,6 +61,8 @@ public sealed record Project
     public ProjectDefinition? Definition { get; init; }
     /// <summary>Patch histories of edited files (the stored files are never modified).</summary>
     public IReadOnlyList<Analysis.FileEdits> Edits { get; init; } = [];
+    /// <summary>Last automatic definition search for this project.</summary>
+    public Acquisition.DefinitionAcquisition? Acquisition { get; init; }
 
     [JsonIgnore] public ProjectFile? Stock => Files.FirstOrDefault(f => f.Role == FileRole.Stock);
 }
