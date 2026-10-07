@@ -38,6 +38,8 @@ public sealed record EcuStudioOptions
     /// &lt;dir&gt;/&lt;path in torrent&gt;. Null: MonoTorrent.
     /// </summary>
     public string? TorrentMirrorPath { get; init; } = Environment.GetEnvironmentVariable("ECUSTUDIO_TORRENT_MIRROR");
+    /// <summary>Pause per MB served by the mirror (to watch the progress display); 0 by default.</summary>
+    public int TorrentMirrorDelayMs { get; init; } = int.TryParse(Environment.GetEnvironmentVariable("ECUSTUDIO_TORRENT_MIRROR_DELAY_MS"), out var ms) ? ms : 0;
 
     public static string DefaultSqlitePath()
     {
@@ -118,7 +120,7 @@ public static class EcuStudioServices
         services.AddSingleton<DefinitionService>();
         services.AddSingleton<DefinitionCache>();
         if (!string.IsNullOrWhiteSpace(options.TorrentMirrorPath))
-            services.AddSingleton<ITorrentClient>(new LocalMirrorTorrentClient(options.TorrentMirrorPath));
+            services.AddSingleton<ITorrentClient>(new LocalMirrorTorrentClient(options.TorrentMirrorPath, chunkDelay: TimeSpan.FromMilliseconds(options.TorrentMirrorDelayMs)));
         else
             services.AddSingleton<ITorrentClient>(_ => new MonoTorrentClient(new MonoTorrentOptions
             {

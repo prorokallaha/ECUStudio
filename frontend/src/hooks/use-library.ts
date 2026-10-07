@@ -55,7 +55,8 @@ export function useLibraryMutations() {
   const scanNew = (r: { id: string }) => libraryApi.scan(r.id).catch(onError).finally(refresh);
   return {
     addRoot: useMutation({ mutationFn: libraryApi.addRoot, onSuccess: scanNew, onError }),
-    addTorrent: useMutation({ mutationFn: ({ file, downloadPath }: { file: File; downloadPath?: string | null }) => libraryApi.addTorrent(file, downloadPath), onSuccess: scanNew, onError }),
+    // The server indexes a new torrent itself (the file list only), so no scan request follows.
+    addTorrent: useMutation({ mutationFn: ({ file, downloadPath }: { file: File; downloadPath?: string | null }) => libraryApi.addTorrent(file, downloadPath), onSuccess: refresh, onError }),
     updateRoot: useMutation({ mutationFn: ({ rootId, ...body }: { rootId: string; name?: string | null; downloadPath?: string | null }) => libraryApi.updateRoot(rootId, body), onSuccess: refresh, onError }),
     removeRoot: useMutation({ mutationFn: libraryApi.removeRoot, onSuccess: refresh, onError }),
     scan: useMutation({ mutationFn: libraryApi.scan, onSuccess: () => qc.invalidateQueries({ queryKey: libraryKeys.roots }), onError }),

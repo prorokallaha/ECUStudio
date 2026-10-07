@@ -9,6 +9,7 @@ import { api } from "@/services/api";
 import { useRunAnalysis } from "@/hooks/use-analysis";
 import { cn } from "@/lib/cn";
 import { useT } from "@/i18n";
+import { DefinitionStatus } from "./definition-status";
 
 function Field({ label, value, mono, warn, className }: { label: string; value?: string | null; mono?: boolean; warn?: boolean; className?: string }) {
   return (
@@ -42,6 +43,7 @@ export function TopBar({ project, report, onPalette }: { project?: Project; repo
         <Field label={t("layout.ecu")} value={report?.ecu.ecuFamily ?? project?.headline?.ecu} className="shrink-0" />
         <Field label="HW" value={report ? t.val(fmtParam(report.ecu.hardwareNumber)) : undefined} mono className="shrink-0" />
         <Field label="SW" value={report ? t.val(fmtParam(report.ecu.softwareNumber)) : undefined} mono className="shrink-0" />
+        <DefinitionStatus project={project} report={report} />
         <div className="flex items-center gap-1.5 px-2.5 border-r border-border">
           <div className="flex flex-col">
             <span className="text-[10px] uppercase tracking-wider text-fg-subtle leading-none">{t("layout.currentBin")}</span>

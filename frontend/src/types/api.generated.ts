@@ -872,6 +872,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/definition/acquisition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DefinitionAcquisition"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": null | components["schemas"]["AcquisitionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/files/{fileId}/content": {
         parameters: {
             query?: never;
@@ -1362,7 +1422,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TorrentSourcesDto"];
+                    };
+                };
+            };
+        };
         put?: never;
         post: {
             parameters: {
@@ -1431,6 +1510,84 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/torrents/magnet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddMagnetBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/torrents/{rootId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    rootId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TorrentSourceOptionsBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LibraryRoot"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/library/roots/{rootId}": {
@@ -1562,6 +1719,64 @@ export interface paths {
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/acquisition/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AcquisitionSettings"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AcquisitionSettings"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AcquisitionSettings"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -2273,6 +2488,39 @@ export interface components {
             /** Format: int64 */
             cacheWriteTokens: number;
         };
+        AcquisitionCandidate: {
+            entryId: string;
+            path: string;
+            fileName: string;
+            format: components["schemas"]["LibraryFormat"];
+            /** Format: int64 */
+            size: number;
+            available: boolean;
+            source: string;
+            /** Format: uuid */
+            sourceId: string;
+            /** Format: int32 */
+            rank: number;
+            confidence: components["schemas"]["MatchConfidence"];
+            level: components["schemas"]["MatchLevel"];
+            reasons: string[];
+            versions: string[];
+        };
+        AcquisitionRequest: {
+            /** Format: uuid */
+            fileId?: null | string;
+            entryId?: null | string;
+        };
+        AcquisitionSettings: {
+            autoAcquire: boolean;
+            autoDownloadExact: boolean;
+            autoTestProbable: boolean;
+            /** Format: int32 */
+            maxConcurrentDownloads: number;
+            cachePath?: null | string;
+        };
+        /** @enum {unknown} */
+        AcquisitionState: "Identify" | "LocalSearch" | "TorrentSearch" | "WaitingMetadata" | "Downloading" | "Verifying" | "Importing" | "MatchingMaps" | "Done" | "AwaitingConfirmation" | "NotFound" | "Failed";
         AddFromLibraryBody: {
             entryId: string;
             role: null | components["schemas"]["FileRole"];
@@ -2280,6 +2528,10 @@ export interface components {
         };
         AddLibraryRootBody: {
             path: string;
+            name: null | string;
+        };
+        AddMagnetBody: {
+            uri: string;
             name: null | string;
         };
         AddTorrentPathBody: {
@@ -2594,6 +2846,26 @@ export interface components {
             role: null | string;
             note: null | string;
         };
+        DefinitionAcquisition: {
+            /** Format: uuid */
+            jobId?: null | string;
+            state: components["schemas"]["AcquisitionState"];
+            fileSha256?: null | string;
+            message?: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+            binarySoftwareVersion?: null | string;
+            candidates: components["schemas"]["AcquisitionCandidate"][];
+            chosen?: null | components["schemas"]["AcquisitionCandidate"];
+            verification?: null | components["schemas"]["DefinitionCompatibilityResult"];
+            transfer?: null | components["schemas"]["TransferInfo"];
+            log: string[];
+            /** Format: int32 */
+            reconciledCount: number;
+            reconciled: components["schemas"]["ReconciledCandidate"][];
+            /** Format: uuid */
+            analysisId?: null | string;
+        };
         DefinitionBinding: {
             origin: components["schemas"]["DefinitionOrigin"];
             name: string;
@@ -2603,18 +2875,52 @@ export interface components {
             reasons: string[];
             compatibility?: null | components["schemas"]["CompatibilityReport"];
             applied: boolean;
+            verification?: null | components["schemas"]["DefinitionCompatibilityResult"];
+            archivePath?: null | string;
         };
+        DefinitionCompatibilityResult: {
+            /** Format: int32 */
+            score: number;
+            status: components["schemas"]["DefinitionFit"];
+            evidence: string[];
+            conflicts: string[];
+            /** Format: int32 */
+            totalMaps: number;
+            /** Format: int32 */
+            matchedMaps: number;
+            /** Format: int32 */
+            invalidMaps: number;
+            /** Format: int32 */
+            relocatedMaps: number;
+            /** Format: int32 */
+            tables: number;
+            /** Format: int32 */
+            parameters: number;
+            /** Format: int32 */
+            axes: number;
+            relocations: components["schemas"]["MapRelocation"][];
+            invalid: components["schemas"]["InvalidMap"][];
+            usable: boolean;
+        };
+        /** @enum {unknown} */
+        DefinitionFit: "Exact" | "Compatible" | "Partial" | "Incompatible" | "Unknown";
         DefinitionMatch: {
             entry: components["schemas"]["LibraryEntry"];
             level: components["schemas"]["MatchLevel"];
             /** Format: double */
             score: number;
             reasons: string[];
+            /**
+             * Format: int32
+             * @default 6
+             */
+            rank: number;
+            confidence: components["schemas"]["MatchConfidence"];
             isDefinition: boolean;
             importable: boolean;
         };
         /** @enum {unknown} */
-        DefinitionOrigin: "Upload" | "Library" | "AutoLibrary";
+        DefinitionOrigin: "Upload" | "Library" | "AutoLibrary" | "Acquired";
         DefinitionPreview: {
             name: string;
             format: components["schemas"]["LibraryFormat"];
@@ -2917,6 +3223,11 @@ export interface components {
             atmosphericPressureMbar?: number;
             coolant: components["schemas"]["CoolantState"];
         };
+        InvalidMap: {
+            mapId: string;
+            name: string;
+            reason: string;
+        };
         InvestigateBody: {
             mapId: null | string;
             candidateId: null | string;
@@ -2931,6 +3242,7 @@ export interface components {
             error?: null | string;
             /** Format: uuid */
             analysisId?: null | string;
+            transfer?: null | components["schemas"]["TransferInfo"];
         };
         JobState: {
             /** Format: uuid */
@@ -2983,6 +3295,7 @@ export interface components {
             ecuFamilies: string[];
             engineHints: string[];
             projectCodes: string[];
+            softwareVersions: string[];
             isEmpty: boolean;
         };
         LibraryRoot: {
@@ -2992,6 +3305,11 @@ export interface components {
             path: string;
             downloadPath?: null | string;
             name?: null | string;
+            infoHash?: null | string;
+            magnetUri?: null | string;
+            enabled: boolean;
+            /** Format: int32 */
+            priority: number;
             /** Format: date-time */
             addedAt: string;
             /** Format: date-time */
@@ -3203,6 +3521,16 @@ export interface components {
         };
         /** @enum {unknown} */
         MapOperationKind: "Set" | "Add" | "Multiply" | "Percent" | "Interpolate" | "Linearize" | "Smooth" | "Values";
+        MapRelocation: {
+            mapId: string;
+            name: string;
+            /** Format: int32 */
+            sourceDefinitionAddress: number;
+            /** Format: int32 */
+            resolvedBinaryAddress: number;
+            /** Format: double */
+            matchConfidence: number;
+        };
         /** @enum {unknown} */
         MapRole: "Unknown" | "DriverWish" | "TorqueLimiter" | "GearTorqueLimiter" | "TorqueToIq" | "SmokeLimiter" | "BoostTarget" | "BoostLimiter" | "Svbl" | "VntDuty" | "Soi" | "Duration" | "RailPressure" | "LambdaTarget" | "EgtProtection" | "TemperatureProtection" | "RpmLimiter" | "GearboxTorqueMonitor";
         MapSummary: {
@@ -3242,7 +3570,9 @@ export interface components {
             max: number;
         };
         /** @enum {unknown} */
-        MatchLevel: "Exact" | "Strong" | "Probable" | "Weak" | "Unknown" | null;
+        MatchConfidence: "Exact" | "VeryHigh" | "High" | "Medium" | "Low" | null;
+        /** @enum {unknown} */
+        MatchLevel: "Exact" | "Strong" | "Probable" | "Weak" | "Unknown";
         MemorySection: {
             name: string;
             /** Format: int32 */
@@ -3372,6 +3702,7 @@ export interface components {
             latestAnalysisId?: null | string;
             definition?: null | components["schemas"]["ProjectDefinition"];
             edits: components["schemas"]["FileEdits"][];
+            acquisition?: null | components["schemas"]["DefinitionAcquisition"];
         };
         ProjectDefinition: {
             /** Format: uuid */
@@ -3390,6 +3721,10 @@ export interface components {
             checkedAgainst?: null | string;
             /** Format: date-time */
             boundAt: string;
+            archivePath?: null | string;
+            verification?: null | components["schemas"]["DefinitionCompatibilityResult"];
+            matchConfidence?: null | components["schemas"]["MatchConfidence"];
+            torrentHash?: null | string;
         };
         ProjectFile: {
             /** Format: uuid */
@@ -3427,6 +3762,14 @@ export interface components {
             /** Format: date-time */
             uploadedAt: string;
             warnings: string[];
+        };
+        ReconciledCandidate: {
+            /** Format: int32 */
+            address: number;
+            candidateLabel: string;
+            mapId: string;
+            mapName: string;
+            note: null | string;
         };
         RejectedClaim: {
             agent: string;
@@ -3552,6 +3895,35 @@ export interface components {
             aiConfigured: boolean;
             plugins: components["schemas"]["PluginInfo"][];
         };
+        TorrentSource: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            infoHash: null | string;
+            magnetUri: null | string;
+            /** Format: int32 */
+            fileCount: number;
+            /** Format: int64 */
+            totalBytes: number;
+            indexed: boolean;
+            metadataPending: boolean;
+            downloadDirectory: null | string;
+            enabled: boolean;
+            /** Format: int32 */
+            priority: number;
+            /** Format: int32 */
+            downloaded: number;
+            lastError: null | string;
+        };
+        TorrentSourceOptionsBody: {
+            enabled: null | boolean;
+            /** Format: int32 */
+            priority: null | number;
+        };
+        TorrentSourcesDto: {
+            client: string;
+            sources: components["schemas"]["TorrentSource"][];
+        };
         TraceStep: {
             quantity: string;
             formula: string;
@@ -3560,6 +3932,23 @@ export interface components {
             unit: string;
             mapId?: null | string;
             note?: null | string;
+        };
+        TransferInfo: {
+            file: string;
+            /** Format: int64 */
+            bytesDone: number;
+            /** Format: int64 */
+            bytesTotal: number;
+            /** Format: int64 */
+            bytesPerSecond: number;
+            /** Format: int32 */
+            peers: number;
+            /** Format: int32 */
+            seeds: number;
+            /** Format: double */
+            secondsLeft: number;
+            /** @default false */
+            fromCache: boolean;
         };
         UnmappedChange: {
             /** Format: int32 */

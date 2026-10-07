@@ -52,6 +52,8 @@ export function useRunAnalysis() {
       }).then((analysisId) => {
         qc.invalidateQueries({ queryKey: keys.project(projectId) });
         qc.invalidateQueries({ queryKey: keys.projects });
+        // A finished analysis without a definition may have started the automatic definition search.
+        qc.invalidateQueries({ queryKey: ["acquisition", projectId] });
         if (navigate) {
           const target = new URL(href("dashboard"), window.location.origin);
           target.searchParams.set("p", projectId);

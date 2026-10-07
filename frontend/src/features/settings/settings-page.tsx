@@ -4,6 +4,7 @@ import { Card, CardHeader, KV, Kbd, Segmented } from "@/components/ui";
 import { useInfo } from "@/hooks/use-analysis";
 import { useUI } from "@/stores/ui";
 import { LANGS, useLang, useT, type TKey } from "@/i18n";
+import { AcquisitionSettingsCard, TorrentSourcesCard } from "./torrent-sources";
 
 const SHORTCUTS: [string, TKey][] = [
   ["Ctrl K", "settings.shortcuts.palette"], ["Ctrl P", "settings.shortcuts.find"], ["Ctrl S", "settings.shortcuts.save"], ["Ctrl Z", "settings.shortcuts.undo"],
@@ -19,6 +20,8 @@ export function SettingsPage() {
     <div>
       <PageHeader title={t("settings.title")} />
       <div className="grid max-w-5xl grid-cols-1 gap-4 p-4 xl:grid-cols-2">
+        <TorrentSourcesCard className="xl:col-span-2" />
+        <AcquisitionSettingsCard />
         <Card>
           <CardHeader title={t("settings.appearance")} />
           <div className="space-y-2 p-3 text-xs">

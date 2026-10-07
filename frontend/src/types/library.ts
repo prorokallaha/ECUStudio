@@ -18,6 +18,16 @@ export type CompatibilityReport = S["CompatibilityReport"];
 export type CompatibilityStatus = S["CompatibilityStatus"];
 export type DefinitionBinding = S["DefinitionBinding"];
 export type DefinitionOrigin = S["DefinitionOrigin"];
+export type DefinitionAcquisition = S["DefinitionAcquisition"];
+export type AcquisitionState = S["AcquisitionState"];
+export type AcquisitionCandidate = S["AcquisitionCandidate"];
+export type AcquisitionSettings = S["AcquisitionSettings"];
+export type DefinitionCompatibilityResult = S["DefinitionCompatibilityResult"];
+export type DefinitionFit = S["DefinitionFit"];
+export type MatchConfidence = NonNullable<S["MatchConfidence"]>;
+export type TransferInfo = S["TransferInfo"];
+export type TorrentSource = S["TorrentSource"];
+export type TorrentSourcesDto = S["TorrentSourcesDto"];
 
 export const LIBRARY_FORMATS: LibraryFormat[] = ["A2L", "Damos", "Xdf", "EcuDef", "Ols", "Kp", "Binary", "Hex", "Csv", "Xml", "Archive", "Other"];
 

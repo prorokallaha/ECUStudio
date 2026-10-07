@@ -118,7 +118,7 @@ export const MapTree = memo(function MapTree({ r, edited, activeMap, activeCandi
                   className={cn("flex w-full items-center gap-2 py-1 pl-6 pr-2 text-left hover:bg-panel-2", activeCandidate === it.c.id && "bg-ai/12")}>
                   <span className={cn("size-1.5 shrink-0 rounded-full", it.c.status === "Confirmed" ? "bg-ok" : it.c.status === "Rejected" ? "bg-danger" : "bg-ai")} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate">{it.label}</span>
+                    <span className="flex items-center gap-1"><span className="truncate">{it.label}</span>{it.c.status === "Candidate" && <span className="shrink-0 rounded border border-ai/30 px-1 text-[9px] text-ai" title={t("acq.heuristicHint")}>CANDIDATE</span>}</span>
                     <span className="num block text-[10px] text-fg-subtle">{hex(it.c.address)} · {it.c.rows}×{it.c.cols} · {t.tx(`candidateStatus.${it.c.status}`, it.c.status)}
                       {it.c.change?.isModified && <span className="text-warn"> · {t("mapEditor.candidateChanged", { n: it.c.change.changedCells, pct: `${it.c.change.meanDeltaPct > 0 ? "+" : ""}${it.c.change.meanDeltaPct}` })}</span>}</span>
                   </span>
@@ -141,6 +141,7 @@ const MapRow = memo(function MapRow({ m, label, active, edited, weak, onClick }:
       className={cn("flex w-full items-center gap-2 py-1 pl-6 pr-2 text-left hover:bg-panel-2", active && (weak ? "bg-ai/12" : "bg-calc/12 text-fg"))}>
       <span className={cn("size-1.5 shrink-0 rounded-full", weak ? "bg-ai" : m.modified ? "bg-calc" : "bg-ok/60")} title={m.modified ? t("maps.dotModified") : t("maps.dotUnchanged")} />
       <span className={cn("flex-1 truncate", weak && "text-fg-muted")}>{label}</span>
+      {weak && <span className="shrink-0 rounded border border-ai/30 px-1 text-[9px] text-ai" title={t("acq.heuristicHint")}>DETECTED</span>}
       {edited && <Pencil className="size-3 shrink-0 text-attn" aria-label={t("mapEditor.editedNotAnalysed")} />}
       {m.modified && <span className="num text-[10px] text-warn">{m.maxDeltaPct > 0 ? "+" : ""}{m.maxDeltaPct.toFixed(0)}%</span>}
     </button>

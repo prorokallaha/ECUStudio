@@ -1,5 +1,5 @@
 import type { Project } from "@/types/domain";
-import type { DefinitionMatch, DefinitionPreview, LibraryEntryQuery, LibraryRoot, LibraryRootStatus, LibrarySearchResult } from "@/types/library";
+import type { AcquisitionSettings, DefinitionAcquisition, DefinitionMatch, DefinitionPreview, LibraryEntryQuery, LibraryRoot, LibraryRootStatus, LibrarySearchResult, TorrentSourcesDto } from "@/types/library";
 import { request } from "./api";
 
 /** Definition library (indexed in place, never copied) and the project definition binding. */
@@ -14,6 +14,10 @@ export const libraryApi = {
   },
   updateRoot: (rootId: string, body: { name?: string | null; downloadPath?: string | null }) =>
     request<LibraryRoot>(`/library/roots/${rootId}`, { method: "PATCH", json: body }),
+  torrents: () => request<TorrentSourcesDto>("/library/torrents"),
+  addMagnet: (body: { uri: string; name?: string | null }) => request<LibraryRoot>("/library/torrents/magnet", { method: "POST", json: body }),
+  setTorrentSource: (rootId: string, body: { enabled?: boolean | null; priority?: number | null }) =>
+    request<LibraryRoot>(`/library/torrents/${rootId}`, { method: "PATCH", json: { enabled: body.enabled ?? null, priority: body.priority ?? null } }),
   removeRoot: (rootId: string) => request<void>(`/library/roots/${rootId}`, { method: "DELETE" }),
   scan: (rootId: string) => request<unknown>(`/library/roots/${rootId}/scan`, { method: "POST" }),
   entries: ({ q, format, definitionsOnly, offset, limit }: LibraryEntryQuery) => {
@@ -27,6 +31,15 @@ export const libraryApi = {
     return request<LibrarySearchResult>(`/library/entries${qs ? `?${qs}` : ""}`);
   },
   matches: (analysisId: string) => request<DefinitionMatch[]>(`/analyses/${analysisId}/definitions`),
+
+  acquisition: {
+    /** Null when no search has run for the project yet. */
+    status: (projectId: string) => request<DefinitionAcquisition | undefined>(`/projects/${projectId}/definition/acquisition`).then((r) => r ?? null),
+    start: (projectId: string, body?: { fileId?: string | null; entryId?: string | null }) =>
+      request<{ jobId: string }>(`/projects/${projectId}/definition/acquisition`, { method: "POST", json: body ?? {} }),
+    settings: () => request<AcquisitionSettings>("/acquisition/settings"),
+    saveSettings: (body: AcquisitionSettings) => request<AcquisitionSettings>("/acquisition/settings", { method: "PUT", json: body }),
+  },
 
   definition: {
     preview: (projectId: string, file: File) => {

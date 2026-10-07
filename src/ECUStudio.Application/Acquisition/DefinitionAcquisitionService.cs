@@ -425,8 +425,10 @@ public sealed class DefinitionAcquisitionService(
     private async Task FinishAsync(Guid projectId, DefinitionAcquisition final)
     {
         final = final with { UpdatedAt = DateTimeOffset.UtcNow };
-        _live.TryRemove(projectId, out _);
+        // Live state first carries the outcome, so a status request never falls back to the previous stored one.
+        _live[projectId] = final;
         if (await store.GetAsync(projectId) is { } p) await store.SaveAsync(p with { Acquisition = final });
+        _live.TryRemove(projectId, out _);
     }
 
     private sealed class SyncProgress<T>(Action<T> action) : IProgress<T>
