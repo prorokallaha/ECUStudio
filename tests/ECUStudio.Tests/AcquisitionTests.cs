@@ -141,7 +141,8 @@ public sealed class AcquisitionTests : IDisposable
         var file = await studio.AddFileAsync(project.Id, "ori.bin", image, FileRole.Stock, null, null);
         var analysisJob = await studio.StartAnalysisAsync(project.Id, new AnalysisStartOptions(null, null));
         Assert.Equal(JobStatus.Completed, await WaitAsync(jobs, analysisJob));
-        var before = (await studio.GetProjectAsync(project.Id)).LatestAnalysisId;
+        // The first analysis (the search may already have replaced it as the latest one by now).
+        var before = jobs.History(analysisJob).Last(e => e.AnalysisId is not null).AnalysisId;
 
         var result = await WaitForAcquisitionAsync(acq, jobs, project.Id);
         Assert.True(result.State == AcquisitionState.Done, $"{result.State}: {result.Message}\n{string.Join("\n", result.Log)}");
