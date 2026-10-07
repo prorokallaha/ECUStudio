@@ -385,7 +385,8 @@ public sealed partial class StudioService(
         var ident = s.Report.Ecu;
         var engine = ECUStudio.Vehicle.Resolution.EcuIdentificationProvider.ParseEngineText(ident.EngineCode.Text) is { } e ? e.Litres : null;
         var key = new BinaryKey(ident.SoftwareNumber.IsKnown ? ident.SoftwareNumber.Text : null, ident.HardwareNumber.IsKnown ? ident.HardwareNumber.Text : null,
-            ident.OemPartNumber.IsKnown ? ident.OemPartNumber.Text : null, ident.EcuFamily, s.Report.ModifiedSha256, engine);
+            ident.OemPartNumber.IsKnown ? ident.OemPartNumber.Text : null, ident.EcuFamily, s.Report.ModifiedSha256, engine,
+            ident.ProjectCode.IsKnown ? ident.ProjectCode.Text : null);
         return definitions.Library.Match(key);
     }
 

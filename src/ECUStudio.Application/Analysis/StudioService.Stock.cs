@@ -69,7 +69,7 @@ public sealed partial class StudioService
             }
         }
 
-        var matches = definitions.Library.Match(new BinaryKey(sw, hw, ident.OemPartNumber.IsKnown ? ident.OemPartNumber.Text : null, ident.EcuFamily, mod.Sha256, null), 200)
+        var matches = definitions.Library.Match(new BinaryKey(sw, hw, ident.OemPartNumber.IsKnown ? ident.OemPartNumber.Text : null, ident.EcuFamily, mod.Sha256, null, ident.ProjectCode.IsKnown ? ident.ProjectCode.Text : null), 200)
             .Where(m => m.Entry.Format is LibraryFormat.Binary && m.Level <= MatchLevel.Probable);
         foreach (var m in matches)
         {
@@ -99,5 +99,26 @@ public sealed partial class StudioService
         if (entry.Format is not (LibraryFormat.Binary)) throw new EcuStudioException("NOT_A_BINARY", $"{entry.RelativePath} is not a binary dump");
         if (content.Length > BinaryImage.MaxSupportedSize) throw new InvalidBinaryException("File too large");
         return await AddFileAsync(projectId, Path.GetFileName(entry.RelativePath), content, body.Role ?? FileRole.Version, body.Label, $"From library: {entry.RelativePath}", ct);
+    }
+}
+
+/// <summary>Raw values of a candidate map in the modified file and, when analysed, the stock file. Scaling is unknown, so values stay raw.</summary>
+public sealed record CandidateData(string CandidateId, double[] XAxis, double[] YAxis, double[] Values, double[]? Stock, double[]? StockXAxis, double[]? StockYAxis);
+
+public sealed partial class StudioService
+{
+    public async Task<CandidateData> CandidateDataAsync(Guid analysisId, string candidateId, CancellationToken ct = default)
+    {
+        var s = await GetSessionAsync(analysisId, ct);
+        var c = s.Report.Candidates.FirstOrDefault(x => x.Id == candidateId) ?? throw new NotFoundException($"Candidate {candidateId} not found");
+        double[] Read(BinaryImage img, int at, int n)
+        {
+            var v = new double[n];
+            ValueReader.ReadRawArray(img.Span, at, n, c.DataType, c.Endian, v);
+            return v;
+        }
+        var stock = s.Request.Stock;
+        return new CandidateData(c.Id, Read(s.Request.Modified, c.XAxisAddress, c.Cols), Read(s.Request.Modified, c.YAxisAddress, c.Rows), Read(s.Request.Modified, c.Address, c.Rows * c.Cols),
+            stock is null ? null : Read(stock, c.Address, c.Rows * c.Cols), stock is null ? null : Read(stock, c.XAxisAddress, c.Cols), stock is null ? null : Read(stock, c.YAxisAddress, c.Rows));
     }
 }

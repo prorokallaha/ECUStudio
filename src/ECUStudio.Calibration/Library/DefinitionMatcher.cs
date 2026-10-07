@@ -2,8 +2,8 @@ namespace ECUStudio.Calibration.Library;
 
 /// <summary>
 /// Ranks library entries against one binary. Levels:
-/// Exact (identical file, or SW + HW both match), Strong (SW matches), Probable (same OEM part number, or SW matches
-/// with a different HW), Weak (same ECU family, optionally the same engine), Unknown (not returned).
+/// Exact (identical file, or SW + HW both match), Strong (SW matches), Probable (same OEM part number, same Bosch project
+/// code, or SW matches with a different HW), Weak (same ECU family, optionally the same engine), Unknown (not returned).
 /// Every match carries the reasons it was made, including what contradicts it.
 /// </summary>
 public static class DefinitionMatcher
@@ -49,6 +49,7 @@ public static class DefinitionMatcher
         var familyExact = family is not null && ids.EcuFamilies.Any(f => NormalizeFamily(f) == family);
         var familyPartial = !familyExact && family is not null && ids.EcuFamilies.Any(f => NormalizeFamily(f) is { } nf && (family.StartsWith(nf, StringComparison.Ordinal) || nf.StartsWith(family, StringComparison.Ordinal)));
         var familyConflict = family is not null && ids.EcuFamilies.Count > 0 && !familyExact && !familyPartial;
+        var projectMatch = key.ProjectCode is { } pc && ids.ProjectCodes.Contains(pc);
         var engineMatch = key.EngineHint is { } eh && ids.EngineHints.Any(h => h.StartsWith(eh, StringComparison.OrdinalIgnoreCase));
 
         if (familyConflict) return null; // a definition for another ECU family is never offered
@@ -59,6 +60,7 @@ public static class DefinitionMatcher
         if (familyExact) reasons.Add($"ECU family {key.EcuFamily}");
         else if (familyPartial) reasons.Add($"ECU family {string.Join(", ", ids.EcuFamilies)} (partial match to {key.EcuFamily})");
         if (engineMatch) reasons.Add($"engine {key.EngineHint}");
+        if (projectMatch) reasons.Add($"Bosch project {key.ProjectCode} {where} (same software family)");
 
         var otherSw = !swMatch && ids.SoftwareNumbers.Count > 0 && key.SoftwareNumber is not null;
         if (otherSw) reasons.Add($"different SW: file has {string.Join(", ", ids.SoftwareNumbers.Take(3))}; addresses may differ");
@@ -67,7 +69,9 @@ public static class DefinitionMatcher
         if (swMatch && hwMatch) return new DefinitionMatch(e, MatchLevel.Exact, 0.95 + bonus, reasons);
         if (swMatch && !hwKnown) return new DefinitionMatch(e, MatchLevel.Strong, 0.85 + bonus, reasons);
         if (swMatch) return new DefinitionMatch(e, MatchLevel.Probable, 0.65 + bonus, reasons);
-        if (oemMatch) return new DefinitionMatch(e, MatchLevel.Probable, (otherSw ? 0.5 : 0.6) + bonus, reasons);
+        if (oemMatch) return new DefinitionMatch(e, MatchLevel.Probable, (otherSw ? 0.5 : 0.6) + (projectMatch ? 0.05 : 0) + bonus, reasons);
+        // Same project, other SW version: structure is usually close, but addresses must be checked before use.
+        if (projectMatch) return new DefinitionMatch(e, MatchLevel.Probable, 0.45 + bonus, [.. reasons, "SW version not confirmed: check addresses before use"]);
         if (familyExact || familyPartial)
             return new DefinitionMatch(e, MatchLevel.Weak, (familyExact ? 0.3 : 0.2) + (engineMatch ? 0.05 : 0) + bonus, reasons);
         return null;

@@ -15,7 +15,7 @@ namespace ECUStudio.Calibration.Plugins.Edc16U34;
 public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, double scanRoleThreshold = 0.6) : IEcuPlugin
 {
     public const string Id = "edc16u34";
-    private static readonly int[] KnownSizes = [0x80000, 0x100000];
+    private static readonly int[] KnownSizes = [0x80000, 0x100000, 0x200000];
 
     public string PluginId => Id;
     public string DisplayName => "Bosch EDC16U34";
@@ -25,6 +25,10 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
     [GeneratedRegex(@"0281\d{6}")] private static partial Regex HwRegex();
     [GeneratedRegex(@"1037\d{6}")] private static partial Regex SwRegex();
     [GeneratedRegex(@"0[0-9A-Z]{2}906021[A-Z]{0,3}")] private static partial Regex OemRegex();
+    /// <summary>VAG ID block: hardware part, software part, software version ("03G906021AB … 03G906021MR  9389").</summary>
+    [GeneratedRegex(@"(0[0-9A-Z]{2}906021[A-Z]{0,3}) *\0+(0[0-9A-Z]{2}906021[A-Z]{0,3}) *\0+(\d{4})")] private static partial Regex VagIdBlockRegex();
+    /// <summary>Bosch SW string with project code: "1037382425P447HAXE".</summary>
+    [GeneratedRegex(@"1037\d{6}P\d{3}([A-Z0-9]{4})")] private static partial Regex ProjectRegex();
     /// <summary>Engine string next to the SW number, e.g. "R4 2,0L EDC G000AG" or "1,9l R4 EDC G000SG".</summary>
     [GeneratedRegex(@"(?:R\d ?)?\d[,.]\d ?[lL](?: ?R\d)? ?(?:EDC)?[ A-Z0-9]{0,10}")] private static partial Regex EngineRegex();
 
@@ -51,16 +55,37 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
         var notes = new List<string>(detection.Reasons);
         var sections = EstimateSections(image);
         Param Match(Regex r, double conf) => r.Match(text) is { Success: true } m ? Param.Str(m.Value.Trim(), SourceType.EcuBinary, conf) : Param.Unknown();
+        // Many dumps carry the HW number only in the file name written by the reading tool: weaker evidence, labelled as such.
+        Param FromName(Param fromBinary, Regex r)
+        {
+            if (fromBinary.IsKnown || r.Match(Path.GetFileName(image.FileName)) is not { Success: true } m) return fromBinary;
+            notes.Add($"{m.Value} taken from the file name, not found in the binary");
+            return Param.Str(m.Value, SourceType.FileName, 0.4);
+        }
+        var hardware = FromName(Match(HwRegex(), 0.85), HwRegex());
+        var oem = Match(OemRegex(), 0.85);
+        Param oemHw = Param.Unknown(), swVersion = Param.Unknown();
+        if (VagIdBlockRegex().Match(text) is { Success: true } block)
+        {
+            // In the ID block the first number is the hardware part and the second the software part (the part number of the calibration).
+            oemHw = Param.Str(block.Groups[1].Value, SourceType.EcuBinary, 0.8);
+            oem = Param.Str(block.Groups[2].Value, SourceType.EcuBinary, 0.85);
+            swVersion = Param.Str(block.Groups[3].Value, SourceType.EcuBinary, 0.8);
+        }
+        var project = ProjectRegex().Match(text) is { Success: true } pm ? Param.Str(pm.Groups[1].Value, SourceType.EcuBinary, 0.85) : Param.Unknown();
 
         return new EcuIdentification
         {
             PluginId = Id,
             EcuFamily = "Bosch EDC16U34",
             Manufacturer = "Bosch",
-            HardwareNumber = Match(HwRegex(), 0.85),
-            BoschNumber = Match(HwRegex(), 0.85),
+            HardwareNumber = hardware,
+            BoschNumber = hardware,
             SoftwareNumber = Match(SwRegex(), 0.85),
-            OemPartNumber = Match(OemRegex(), 0.85),
+            OemPartNumber = oem,
+            OemHardwarePartNumber = oemHw,
+            SoftwareVersion = swVersion,
+            ProjectCode = project,
             EngineCode = Match(EngineRegex(), 0.6),
             Processor = "Freescale MPC5xx (PowerPC), big-endian",
             Endianness = Endianness.Big,

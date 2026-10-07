@@ -41,6 +41,7 @@ export type StepProgress = S["StepProgress"];
 export type AIAnalysisResult = S["AIAnalysisResult"];
 export type AssistantAnswer = S["AssistantAnswer"];
 export type MapHypothesisResult = S["MapHypothesisResult"];
+export type CandidateData = S["CandidateData"];
 export type VinInfo = S["VinInfo"];
 export type VehicleVariant = S["VehicleVariant"];
 export type SystemInfo = S["SystemInfo"];

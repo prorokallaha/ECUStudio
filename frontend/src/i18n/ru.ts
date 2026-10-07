@@ -19,7 +19,7 @@ export const ru = {
   severity: { Safe: "БЕЗОПАСНО", Review: "ПРОВЕРИТЬ", Warning: "ВНИМАНИЕ", Danger: "ОПАСНО", Unknown: "НЕИЗВЕСТНО" },
   source: {
     OemSpec: "OEM", PublicSpec: "Публичные данные", Database: "База", VariantTypical: "База · типично", VinDecode: "VIN",
-    EcuBinary: "Бинарь ЭБУ", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "База определений", SignatureScan: "Сигнатуры",
+    EcuBinary: "Бинарь ЭБУ", FileName: "Имя файла", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "База определений", SignatureScan: "Сигнатуры",
     DiagnosticLog: "Лог", Calculated: "Расчёт", AIInferred: "Вывод AI", User: "Пользователь", Assumption: "Допущение", Unknown: "Неизвестно",
   },
   role: {
@@ -225,7 +225,7 @@ export const ru = {
   dashboard: {
     subtitle: "{mod} vs {stock} · анализ {v}", subtitleNoStock: "{mod} (нет стокового файла — только абсолютные значения) · анализ {v}",
     overallRisk: "Общий риск", data: "данные: {level}", moreData: "Больше данных (сток, определения, логи, проверенное железо) сужает каждый диапазон.",
-    mainFindings: "Основные выводы", items: "{n} шт.", fullLoad: "Оценка на полной нагрузке", fullLoadSubtitle: "4-я передача · 20 °C · уровень моря",
+    sameAxesCopies: " (и ещё {n} с теми же осями)", mainFindings: "Основные выводы", items: "{n} шт.", fullLoad: "Оценка на полной нагрузке", fullLoadSubtitle: "4-я передача · 20 °C · уровень моря",
     openDyno: "Открыть виртуальный стенд", definitions: "Определения", checksums: "Контрольные суммы",
     criticalUnknowns: "Критичные неизвестные", noUnknowns: "Нет — все критичные пределы известны.", dataAvailability: "Полнота данных",
     assumptions: "Допущения модели", range: "диапазон {r}", stock: "сток",
@@ -236,7 +236,7 @@ export const ru = {
   },
   ecu: {
     subtitle: "{family} · плагин {plugin}", boschNumber: "Номер Bosch", oemPartNumber: "OEM-номер детали", hardwareNumber: "Номер HW", softwareNumber: "Номер SW",
-    softwareVersion: "Версия SW", processor: "Процессор", endianness: "Порядок байт", flashSize: "Объём flash", unknownProcessor: "Неизвестен",
+    softwareVersion: "Версия SW", oemHardwarePartNumber: "Номер железа VAG", projectCode: "Проект Bosch", processor: "Процессор", endianness: "Порядок байт", flashSize: "Объём flash", unknownProcessor: "Неизвестен",
     detection: "Обнаружение", score: "оценка {s}", checksums: "Контрольные суммы", stored: "записано {s} · ожидается {c}",
     memoryMap: "Карта памяти", memoryMapSubtitle: "секции оценочные; адреса карт из определений; изменения относительно стока",
     sections: "Секции", colName: "Имя", colKind: "Тип", colStart: "Начало", colEnd: "Конец", colSize: "Размер", colNote: "Примечание",
@@ -325,6 +325,7 @@ export const ru = {
     linkedTo: "Связано с", toRaise: "Как повысить уверенность", raw: "Raw = (значение − смещение) / множитель, {type} {endian}-endian, начиная с {addr}.",
     seriesStock: "{y} сток",
     candidate: {
+      values: "Значения (сырые)", changedSummary: "Изменено {n} из {total} ячеек: в среднем {mean} %, от {min} до {max} %", unchanged: "Совпадает со стоком", rawHint: "Масштаб неизвестен: значения без пересчёта",
       unknownMap: "Неизвестная карта", openInHex: "открыть в hex", confirm: "ПОДТВЕРДИТЬ {role}", reject: "ОТКЛОНИТЬ", editDefinition: "ИЗМЕНИТЬ ОПРЕДЕЛЕНИЕ",
       header: "Заголовок", data: "Данные", rawRange: "Сырой диапазон", endian: "Порядок байт", axesRaw: "Оси (сырые)",
       sigHyp: "Гипотезы по сигнатурам", sigHypSubtitle: "детерминированный классификатор — 25 % вероятности всегда оставлено на «неизвестно»",
@@ -341,7 +342,7 @@ export const ru = {
   mapEditor: {
     unknownMap: "Неизвестная карта", candidateHyp: "Кандидат: {role}, {pct}%",
     filter: { all: "Все", defined: "Определённые", modified: "Изменённые", candidates: "Кандидаты", unknown: "Неизвестные", user: "Пользовательские" },
-    treeCandidates: "Кандидаты и неизвестные", treeEmpty: "Ничего не найдено",
+    treeCandidates: "Кандидаты и неизвестные", candidateChanged: "изменено ячеек: {n}, {pct} %", treeEmpty: "Ничего не найдено",
     editedNotAnalysed: "изменено, не переанализировано", editedHint: "Значения взяты из рабочего буфера после правок. Анализ, симуляция и риски ещё считают по исходному файлу — запустите повторный анализ.",
     editedCells: "Изменено ячеек в рабочем буфере: {n}",
     tabRaw: "Raw hex", tabCompare: "Сток vs Мод", heat: "Цвет по значению", modCurrent: "Мод (текущий)", deltaAbs: "Дельта", deltaPct: "Дельта %",

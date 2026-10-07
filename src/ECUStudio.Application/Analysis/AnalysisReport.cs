@@ -44,7 +44,8 @@ public sealed record DiffSummary(string MapId, string Name, MapRole Role, int Ch
 
 public sealed record KeyMetric(string Id, string Label, Estimate? Stock, Estimate Modified, string? Detail = null, Severity? Severity = null, string? Link = null);
 
-public sealed record MainFinding(string Text, Severity Severity, string? Link, string Code);
+/// <summary>A headline finding. <see cref="Args"/> carries structured values so the UI can render it in the user's language.</summary>
+public sealed record MainFinding(string Text, Severity Severity, string? Link, string Code, IReadOnlyDictionary<string, string>? Args = null);
 
 public sealed record WotSample(double Rpm, Estimate TorqueNm, Estimate PowerHp, Estimate BoostMbar, Estimate IqMg, Estimate Lambda, Estimate EgtC, Limiter TorqueLimiter, Limiter FuelLimiter, Limiter BoostLimiter);
 

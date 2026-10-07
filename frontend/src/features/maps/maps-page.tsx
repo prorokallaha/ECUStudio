@@ -27,7 +27,9 @@ function Maps({ r, defaultView }: { r: AnalysisReport; defaultView?: MapView }) 
   const { params, setParam } = useWorkspace();
   const select = useSelection((s) => s.select);
   const mapId = params.get("map") ?? (params.get("candidate") ? null : r.maps.find((m) => m.modified)?.id ?? r.maps[0]?.id ?? null);
-  const candidateId = params.get("candidate");
+  // Without decoded maps (no definition), open the most changed candidate instead of an empty view.
+  const candidateId = params.get("candidate") ?? (mapId ? null
+    : [...r.candidates].filter((c) => c.change?.isModified).sort((a, b) => (b.change?.changedCells ?? 0) - (a.change?.changedCells ?? 0))[0]?.id ?? null);
   const data = useMapData(candidateId ? null : mapId);
   const candidate = candidateId ? r.candidates.find((c) => c.id === candidateId) : undefined;
   const view = (params.get("view") as MapView | null) ?? defaultView ?? "table";

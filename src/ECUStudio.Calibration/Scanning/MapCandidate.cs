@@ -10,6 +10,38 @@ public enum CandidateStatus { Candidate, Confirmed, Rejected }
 
 public sealed record RoleHypothesis(MapRole Role, double Confidence, string Rationale, SourceType Source, IReadOnlyList<Evidence> Evidence);
 
+/// <summary>How a candidate map differs from the stock file at the same address (raw values; scaling is not known).</summary>
+public sealed record CandidateChange(int ChangedCells, int TotalCells, double MeanDeltaPct, double MaxDeltaPct, double MinDeltaPct,
+    double StockMin, double StockMax, double ModMin, double ModMax, bool AxesChanged)
+{
+    public bool IsModified => ChangedCells > 0 || AxesChanged;
+
+    /// <summary>Compares the candidate's axes and data in two images of the same layout.</summary>
+    public static CandidateChange Compare(MapCandidate c, ReadOnlySpan<byte> stock, ReadOnlySpan<byte> mod)
+    {
+        var n = c.Rows * c.Cols;
+        var s = new double[n];
+        var m = new double[n];
+        ValueReader.ReadRawArray(stock, c.Address, n, c.DataType, c.Endian, s);
+        ValueReader.ReadRawArray(mod, c.Address, n, c.DataType, c.Endian, m);
+        var axisBytes = (c.Rows + c.Cols) * c.DataType.Size();
+        var axesChanged = !stock.Slice(c.XAxisAddress, axisBytes).SequenceEqual(mod.Slice(c.XAxisAddress, axisBytes));
+        int changed = 0, pctCount = 0;
+        double sum = 0, max = double.MinValue, min = double.MaxValue;
+        for (var i = 0; i < n; i++)
+        {
+            if (s[i] == m[i]) continue;
+            changed++;
+            if (s[i] == 0) continue;
+            var pct = (m[i] - s[i]) / Math.Abs(s[i]) * 100;
+            sum += pct; pctCount++;
+            max = Math.Max(max, pct); min = Math.Min(min, pct);
+        }
+        return new CandidateChange(changed, n, pctCount == 0 ? 0 : Math.Round(sum / pctCount, 1), pctCount == 0 ? 0 : Math.Round(max, 1), pctCount == 0 ? 0 : Math.Round(min, 1),
+            s.Min(), s.Max(), m.Min(), m.Max(), axesChanged);
+    }
+}
+
 public sealed record AxisGuess(AxisQuantity Quantity, double Likelihood, double Factor, string Unit);
 
 /// <summary>
@@ -35,6 +67,8 @@ public sealed record MapCandidate
     public CandidateStatus Status { get; init; } = CandidateStatus.Candidate;
     public MapRole? ConfirmedRole { get; init; }
     public string? DecisionNote { get; init; }
+    /// <summary>Difference from the stock file, when one was analysed.</summary>
+    public CandidateChange? Change { get; init; }
 
     public RoleHypothesis? Best => Hypotheses.Count == 0 ? null : Hypotheses[0];
 

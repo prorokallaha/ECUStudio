@@ -1396,6 +1396,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library/torrents/path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddTorrentPathBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/library/roots/{rootId}": {
         parameters: {
             query?: never;
@@ -2132,6 +2169,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyses/{analysisId}/candidates/{candidateId}/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    analysisId: string;
+                    candidateId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidateData"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analyses/{analysisId}/candidates/{candidateId}/hypotheses": {
         parameters: {
             query?: never;
@@ -2206,6 +2281,10 @@ export interface components {
         AddLibraryRootBody: {
             path: string;
             name: null | string;
+        };
+        AddTorrentPathBody: {
+            path: string;
+            downloadPath: null | string;
         };
         AgentRun: {
             agent: string;
@@ -2303,6 +2382,37 @@ export interface components {
             address: number;
             /** Format: byte */
             bytes: string;
+        };
+        CandidateChange: {
+            /** Format: int32 */
+            changedCells: number;
+            /** Format: int32 */
+            totalCells: number;
+            /** Format: double */
+            meanDeltaPct: number;
+            /** Format: double */
+            maxDeltaPct: number;
+            /** Format: double */
+            minDeltaPct: number;
+            /** Format: double */
+            stockMin: number;
+            /** Format: double */
+            stockMax: number;
+            /** Format: double */
+            modMin: number;
+            /** Format: double */
+            modMax: number;
+            axesChanged: boolean;
+            isModified: boolean;
+        };
+        CandidateData: {
+            candidateId: string;
+            xAxis: (number)[];
+            yAxis: (number)[];
+            values: (number)[];
+            stock: null | (number)[];
+            stockXAxis: null | (number)[];
+            stockYAxis: null | (number)[];
         };
         /** @enum {unknown} */
         CandidateStatus: "Candidate" | "Confirmed" | "Rejected";
@@ -2609,6 +2719,8 @@ export interface components {
             hardwareNumber: components["schemas"]["Param"];
             softwareNumber: components["schemas"]["Param"];
             softwareVersion: components["schemas"]["Param"];
+            oemHardwarePartNumber: components["schemas"]["Param"];
+            projectCode: components["schemas"]["Param"];
             engineCode: components["schemas"]["Param"];
             processor: string;
             endianness: components["schemas"]["Endianness"];
@@ -2870,6 +2982,7 @@ export interface components {
             oemNumbers: string[];
             ecuFamilies: string[];
             engineHints: string[];
+            projectCodes: string[];
             isEmpty: boolean;
         };
         LibraryRoot: {
@@ -2972,6 +3085,9 @@ export interface components {
             severity: components["schemas"]["Severity"];
             link: null | string;
             code: string;
+            args?: null | {
+                [key: string]: string;
+            };
         };
         MapAlternative: {
             purpose: string;
@@ -3003,6 +3119,7 @@ export interface components {
             status: components["schemas"]["CandidateStatus"];
             confirmedRole?: null | components["schemas"]["MapRole"];
             decisionNote?: null | string;
+            change?: null | components["schemas"]["CandidateChange"];
             best?: components["schemas"]["RoleHypothesis"];
             displayName: null | string;
             /** Format: int32 */
@@ -3391,7 +3508,7 @@ export interface components {
             coverage: components["schemas"]["OutputCoverage"][];
         };
         /** @enum {unknown} */
-        SourceType: "OemSpec" | "PublicSpec" | "Database" | "VariantTypical" | "VinDecode" | "EcuBinary" | "Damos" | "A2L" | "Xdf" | "DefinitionDb" | "SignatureScan" | "DiagnosticLog" | "Calculated" | "AIInferred" | "User" | "Assumption" | "Unknown";
+        SourceType: "OemSpec" | "PublicSpec" | "Database" | "VariantTypical" | "VinDecode" | "EcuBinary" | "FileName" | "Damos" | "A2L" | "Xdf" | "DefinitionDb" | "SignatureScan" | "DiagnosticLog" | "Calculated" | "AIInferred" | "User" | "Assumption" | "Unknown";
         SseItemOfJobEvent: {
             data?: components["schemas"]["JobEvent"];
             eventType: null | string;

@@ -26,6 +26,8 @@ public sealed partial class LibraryScanner
     private static partial Regex EcuFamilyRegex();
     [GeneratedRegex(@"(?<![0-9])([1-6][.,]\d)\s?(TDI|TSI|TFSI|CDI|HDI|DCI|CRDI|D|L)(?![A-Z])", RegexOptions.IgnoreCase)]
     private static partial Regex EngineRegex();
+    [GeneratedRegex(@"(?<![0-9])103[79]\d{6}P\d{3}([A-Z0-9]{4})")] private static partial Regex ProjectInSwRegex();
+    [GeneratedRegex(@"(?:^|[/\\])SW[/\\]([A-Z0-9]{4})(?=[/\\])")] private static partial Regex ProjectFolderRegex();
 
     public static LibraryFormat FormatOf(string path)
     {
@@ -62,6 +64,7 @@ public sealed partial class LibraryScanner
             OemNumbers = All(VagOemRegex(), text, m => NormalizeOem(m.Value)),
             EcuFamilies = All(EcuFamilyRegex(), text, m => m.Value.ToUpperInvariant().Replace(" ", "", StringComparison.Ordinal)),
             EngineHints = All(EngineRegex(), text, m => $"{m.Groups[1].Value.Replace(',', '.')} {m.Groups[2].Value.ToUpperInvariant()}"),
+            ProjectCodes = All(ProjectInSwRegex(), text, m => m.Groups[1].Value).Union(All(ProjectFolderRegex(), text, m => m.Groups[1].Value)).ToList(),
         };
     }
 
@@ -74,6 +77,7 @@ public sealed partial class LibraryScanner
         OemNumbers = a.OemNumbers.Union(b.OemNumbers).ToList(),
         EcuFamilies = a.EcuFamilies.Union(b.EcuFamilies, StringComparer.OrdinalIgnoreCase).ToList(),
         EngineHints = a.EngineHints.Union(b.EngineHints, StringComparer.OrdinalIgnoreCase).ToList(),
+        ProjectCodes = a.ProjectCodes.Union(b.ProjectCodes).ToList(),
     };
 
     /// <summary>Scans a directory. <paramref name="previous"/> (by relative path) lets unchanged files skip content analysis.</summary>

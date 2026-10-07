@@ -158,6 +158,17 @@ public sealed class DefinitionLibrary
         return root;
     }
 
+    /// <summary>Adds a .torrent that is already on this machine (no upload size limit beyond the parser's).</summary>
+    public LibraryRoot AddTorrentFile(string torrentPath, string? downloadPath)
+    {
+        if (string.IsNullOrWhiteSpace(torrentPath) || !Path.IsPathFullyQualified(torrentPath)) throw new EcuStudioException("LIBRARY_PATH", "Give an absolute path to the .torrent file");
+        var full = Path.GetFullPath(torrentPath);
+        if (!File.Exists(full)) throw new EcuStudioException("LIBRARY_PATH", $"File not found: {full}");
+        _policy.EnsureAllowed(Path.GetDirectoryName(full)!);
+        if (new FileInfo(full).Length > TorrentMetadata.MaxTorrentBytes) throw new EcuStudioException("LIBRARY_TOO_LARGE", ".torrent file is larger than 256 MB");
+        return AddTorrent(Path.GetFileName(full), File.ReadAllBytes(full), downloadPath);
+    }
+
     public LibraryRoot UpdateRoot(Guid rootId, string? name, string? downloadPath)
     {
         lock (_lock)

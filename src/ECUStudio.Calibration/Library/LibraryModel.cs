@@ -56,8 +56,10 @@ public sealed record LibraryIdentifiers
     public IReadOnlyList<string> OemNumbers { get; init; } = [];
     public IReadOnlyList<string> EcuFamilies { get; init; } = [];
     public IReadOnlyList<string> EngineHints { get; init; } = [];
+    /// <summary>Bosch project codes ("HAXE"): from a "1037…P…XXXX" SW string or an archive folder ".../SW/XXXX/...".</summary>
+    public IReadOnlyList<string> ProjectCodes { get; init; } = [];
 
-    public bool IsEmpty => SoftwareNumbers.Count + HardwareNumbers.Count + OemNumbers.Count + EcuFamilies.Count + EngineHints.Count == 0;
+    public bool IsEmpty => SoftwareNumbers.Count + HardwareNumbers.Count + OemNumbers.Count + EcuFamilies.Count + EngineHints.Count + ProjectCodes.Count == 0;
 }
 
 /// <summary>One indexed file. The index stores metadata only; the file itself stays where it is.</summary>
@@ -94,4 +96,4 @@ public sealed record DefinitionMatch(LibraryEntry Entry, MatchLevel Level, doubl
 }
 
 /// <summary>What the binary is matched with.</summary>
-public sealed record BinaryKey(string? SoftwareNumber, string? HardwareNumber, string? OemNumber, string? EcuFamily, string? Sha256, string? EngineHint);
+public sealed record BinaryKey(string? SoftwareNumber, string? HardwareNumber, string? OemNumber, string? EcuFamily, string? Sha256, string? EngineHint, string? ProjectCode = null);

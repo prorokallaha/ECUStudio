@@ -84,6 +84,7 @@ export const SOURCE_META: Record<SourceType, { label: string; family: "oem" | "d
   VariantTypical: { label: "Database · typical", family: "db" },
   VinDecode: { label: "VIN decode", family: "db" },
   EcuBinary: { label: "ECU binary", family: "oem" },
+  FileName: { label: "File name", family: "unknown" },
   Damos: { label: "DAMOS", family: "damos" },
   A2L: { label: "A2L", family: "a2l" },
   Xdf: { label: "XDF", family: "a2l" },

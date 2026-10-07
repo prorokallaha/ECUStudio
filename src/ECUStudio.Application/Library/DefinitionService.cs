@@ -86,7 +86,7 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
         var (plugin, _) = plugins.Detect(image);
         var ident = plugin.Identify(image);
         var engine = Vehicle.Resolution.EcuIdentificationProvider.ParseEngineText(ident.EngineCode.Text) is { } e ? e.Litres : null;
-        return new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, engine);
+        return new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, engine, Text(ident.ProjectCode));
     }
 
     public DefinitionPreview Preview(string fileName, byte[] content, BinaryImage? target)
@@ -154,7 +154,7 @@ public sealed class DefinitionService(DefinitionLibrary library, PluginRegistry 
 
     private ResolvedDefinition FromLibrary(BinaryImage image, EcuIdentification ident)
     {
-        var key = new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, null);
+        var key = new BinaryKey(Text(ident.SoftwareNumber), Text(ident.HardwareNumber), Text(ident.OemPartNumber), ident.EcuFamily, image.Sha256, null, Text(ident.ProjectCode));
         var matches = library.Match(key, 20).Where(m => m.IsDefinition && m.Level <= MatchLevel.Strong).ToList();
         if (matches.Count == 0) return new(null, null, []);
         var notes = new List<string>();

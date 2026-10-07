@@ -17,6 +17,10 @@ public sealed record EcuIdentification
     public Param HardwareNumber { get; init; } = Param.Unknown();
     public Param SoftwareNumber { get; init; } = Param.Unknown();
     public Param SoftwareVersion { get; init; } = Param.Unknown();
+    /// <summary>VAG hardware part number when the ID block lists it next to the software part number.</summary>
+    public Param OemHardwarePartNumber { get; init; } = Param.Unknown();
+    /// <summary>Bosch project code from the SW string (e.g. "HAXE" in "1037382425P447HAXE"); one project covers many SW versions.</summary>
+    public Param ProjectCode { get; init; } = Param.Unknown();
     public Param EngineCode { get; init; } = Param.Unknown();
     public string Processor { get; init; } = "Unknown";
     public Endianness Endianness { get; init; }

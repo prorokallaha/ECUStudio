@@ -51,7 +51,8 @@ export const MapTree = memo(function MapTree({ r, edited, activeMap, activeCandi
     } else {
       const c = it.c;
       switch (f) {
-        case "defined": case "modified": return false;
+        case "defined": return false;
+        case "modified": return !!c.change?.isModified;
         case "candidates": return c.status === "Candidate" && !!c.best && c.best.role !== "Unknown";
         case "unknown": return c.status === "Rejected" || !c.best || c.best.role === "Unknown";
         case "user": return c.status === "Confirmed";
@@ -118,7 +119,8 @@ export const MapTree = memo(function MapTree({ r, edited, activeMap, activeCandi
                   <span className={cn("size-1.5 shrink-0 rounded-full", it.c.status === "Confirmed" ? "bg-ok" : it.c.status === "Rejected" ? "bg-danger" : "bg-ai")} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{it.label}</span>
-                    <span className="num block text-[10px] text-fg-subtle">{hex(it.c.address)} · {it.c.rows}×{it.c.cols} · {t.tx(`candidateStatus.${it.c.status}`, it.c.status)}</span>
+                    <span className="num block text-[10px] text-fg-subtle">{hex(it.c.address)} · {it.c.rows}×{it.c.cols} · {t.tx(`candidateStatus.${it.c.status}`, it.c.status)}
+                      {it.c.change?.isModified && <span className="text-warn"> · {t("mapEditor.candidateChanged", { n: it.c.change.changedCells, pct: `${it.c.change.meanDeltaPct > 0 ? "+" : ""}${it.c.change.meanDeltaPct}` })}</span>}</span>
                   </span>
                 </button>
               ))}

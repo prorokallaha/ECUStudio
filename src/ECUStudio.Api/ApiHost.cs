@@ -23,6 +23,7 @@ public static class ApiHost
     public const long MaxUploadBytes = 16 * 1024 * 1024;
     /// <summary>Request limit: definition files (A2L) are much larger than binaries; per-endpoint checks apply the tighter limits.</summary>
     public const long MaxRequestBytes = ECUStudio.Application.Library.DefinitionLibrary.MaxImportBytes + 64 * 1024;
+    // Large .torrent files (hundreds of thousands of entries) are added by local path instead: POST /library/torrents/path.
 
     public static WebApplication Build(string[] args, ApiHostOptions? hostOptions = null)
     {

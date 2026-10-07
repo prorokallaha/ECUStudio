@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MapGrid, type CellRef } from "@/components/calibration/map-grid";
 import Link from "next/link";
 import { Bot, Check, PencilLine, X } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +10,7 @@ import { api, ApiError } from "@/services/api";
 import { useInfo, useRunAnalysis } from "@/hooks/use-analysis";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useHistory } from "@/stores/history";
-import { AIBadge, Badge, Button, Card, CardHeader, ConfidenceBadge, Dialog, Input, SectionTitle, Select, SourceBadge } from "@/components/ui";
+import { AIBadge, Badge, Button, Card, CardHeader, ConfidenceBadge, Dialog, Input, SectionTitle, Segmented, Select, SourceBadge } from "@/components/ui";
 import { EvidenceList } from "@/components/ai/answer-card";
 import { hex } from "@/lib/format";
 import { useT } from "@/i18n";
@@ -64,6 +66,7 @@ export function CandidatePanel({ r, c }: { r: AnalysisReport; c: MapCandidate })
         <Fact k={t("maps.candidate.header")} v={hex(c.headerAddress)} /><Fact k={t("maps.candidate.data")} v={`${hex(c.address)} · ${c.rows}×${c.cols} ${c.dataType}`} />
         <Fact k={t("maps.candidate.rawRange")} v={`${c.rawMin} … ${c.rawMax}`} /><Fact k={t("maps.candidate.endian")} v={t.tx(`endian.${c.endian}`, c.endian)} />
       </div>
+      <CandidateValues r={r} c={c} />
       <Card>
         <CardHeader title={t("maps.candidate.axesRaw")} />
         <div className="space-y-1 p-3 font-mono text-[11px]">
@@ -121,4 +124,28 @@ export function CandidatePanel({ r, c }: { r: AnalysisReport; c: MapCandidate })
 
 function Fact({ k, v }: { k: string; v: string }) {
   return <div className="rounded-md border border-border bg-panel px-2.5 py-1.5"><div className="text-[10px] uppercase tracking-wide text-fg-subtle">{k}</div><div className="num">{v}</div></div>;
+}
+
+/** Raw cell values of the candidate; with a stock file, stock / modified / delta side by side. Scaling is unknown, so nothing is converted. */
+function CandidateValues({ r, c }: { r: AnalysisReport; c: MapCandidate }) {
+  const t = useT();
+  const q = useQuery({ queryKey: ["candidate-data", r.id, c.id], queryFn: () => api.analyses.candidateData(r.id, c.id), staleTime: Infinity });
+  const [kind, setKind] = useState<"values" | "stock" | "delta" | "deltaPct">(c.change?.isModified ? "deltaPct" : "values");
+  const [sel, setSel] = useState<CellRef[]>([]);
+  const d = q.data;
+  const hasStock = !!d?.stock;
+  const ch = c.change;
+  return (
+    <Card>
+      <CardHeader title={t("maps.candidate.values")}
+        subtitle={ch?.isModified ? t("maps.candidate.changedSummary", { n: ch.changedCells, total: ch.totalCells, mean: ch.meanDeltaPct, min: ch.minDeltaPct, max: ch.maxDeltaPct }) : hasStock ? t("maps.candidate.unchanged") : t("maps.candidate.rawHint")}
+        actions={hasStock ? <Segmented size="xs" value={kind} onChange={setKind} options={[
+          { value: "values", label: t("common.modified") }, { value: "stock", label: t("common.stock") }, { value: "deltaPct", label: "Δ%" }, { value: "delta", label: t("maps.deltaAbs") },
+        ]} /> : undefined} />
+      <div className="overflow-auto p-3">
+        {q.isLoading && <div className="text-xs text-fg-muted">…</div>}
+        {d && <MapGrid xAxis={d.xAxis} yAxis={d.yAxis} values={d.values} stock={d.stock} kind={hasStock ? kind : "values"} selected={sel} onSelect={(cells) => setSel(cells)} dense decimals={0} />}
+      </div>
+    </Card>
+  );
 }

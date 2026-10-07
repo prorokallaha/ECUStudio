@@ -12,6 +12,8 @@ public enum SourceType
     VariantTypical,
     VinDecode,
     EcuBinary,
+    /// <summary>Read from the file name (e.g. a HW number written by the reading tool); weaker than the binary content.</summary>
+    FileName,
     Damos,
     A2L,
     Xdf,

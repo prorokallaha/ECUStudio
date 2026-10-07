@@ -121,9 +121,11 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             var extra = candidates.Select(c => new ByteRange(c.HeaderAddress, 4 + 2 * (c.Rows + c.Cols + c.Rows * c.Cols)))
                 .Concat(resolution.Checksums.Select(c => new ByteRange(c.StoredAt, c.EffectiveStoreSize)));
             diff = MapDiffer.Compare(req.Stock, req.Modified, stockSet, modBuild.Set, ident.Sections, extra);
+            for (var i = 0; i < candidates.Count; i++)
+                candidates[i] = candidates[i] with { Change = CandidateChange.Compare(candidates[i], req.Stock.Span, req.Modified.Span) };
             calFindings.AddRange(AnomalyDetector.Detect(diff, modBuild.Set));
             calFindings.AddRange(Stage1ConsistencyAnalyzer.Analyze(stockSet, modBuild.Set, diff, plugin.HasCommonRail));
-            Step("stock", StepState.Done, 1, $"{diff.Modified.Count()} modified map(s), {diff.ChangedBytes} bytes");
+            Step("stock", StepState.Done, 1, $"{diff.Modified.Count()} modified map(s), {candidates.Count(c => c.Change?.IsModified == true)} modified candidate(s), {diff.ChangedBytes} bytes");
         }
         ct.ThrowIfCancellationRequested();
 
@@ -213,7 +215,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             Risk = risk,
             Explanations = explanations,
             KeyMetrics = KeyMetrics(modGrid, stockGrid, risk),
-            MainFindings = MainFindings(diff, risk, modBuild.Set),
+            MainFindings = MainFindings(diff, risk, modBuild.Set, candidates),
             Unknowns = risk.CriticalUnknowns.Concat(vehicle.Profile.Notes).Distinct().ToList(),
             Logs = logValidations,
         };
@@ -337,9 +339,23 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         ];
     }
 
-    private static List<MainFinding> MainFindings(DiffResult? diff, RiskReport risk, CalibrationSet set)
+    private static List<MainFinding> MainFindings(DiffResult? diff, RiskReport risk, CalibrationSet set, IReadOnlyList<MapCandidate> candidates)
     {
         var list = new List<MainFinding>();
+        // Changed maps whose purpose is not established: shown by structure, never by a hypothesised name.
+        // Copies with identical axes (per gear / per mode variants) are reported once.
+        var changedGroups = candidates.Where(c => c.Change?.IsModified == true && c.Status != CandidateStatus.Rejected)
+            .GroupBy(MapKnowledge.Fingerprint)
+            .OrderByDescending(g => g.Sum(c => c.Change!.ChangedCells)).Take(8);
+        foreach (var g in changedGroups)
+        {
+            var c = g.First();
+            var ch = c.Change!;
+            var copies = g.Count() > 1 ? $" (+{g.Count() - 1} with the same axes)" : "";
+            var text = $"{c.DisplayName}{copies}: {ch.ChangedCells}/{ch.TotalCells} cells changed, mean {ch.MeanDeltaPct:+0.#;-0.#;0} %{(ch.AxesChanged ? ", axes changed" : "")}";
+            list.Add(new MainFinding(text, Severity.Review, $"maps?candidate={c.Id}", "CANDIDATE_CHANGED",
+                new Dictionary<string, string> { ["candidateId"] = c.Id, ["copies"] = (g.Count() - 1).ToString(System.Globalization.CultureInfo.InvariantCulture) }));
+        }
         if (diff is not null)
         {
             foreach (var d in diff.Modified.OrderByDescending(d => Math.Abs(d.MaxIncreasePct)).Take(8))

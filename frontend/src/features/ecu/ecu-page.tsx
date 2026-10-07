@@ -17,7 +17,7 @@ function Ecu({ r }: { r: AnalysisReport }) {
   const { router, href, projectId, analysisId } = useWorkspace();
   const e = r.ecu;
   const rows: [string, Param | string][] = [
-    [t("ecu.boschNumber"), e.boschNumber!], [t("ecu.oemPartNumber"), e.oemPartNumber!], [t("ecu.hardwareNumber"), e.hardwareNumber!], [t("ecu.softwareNumber"), e.softwareNumber!],
+    [t("ecu.boschNumber"), e.boschNumber!], [t("ecu.oemPartNumber"), e.oemPartNumber!], [t("ecu.oemHardwarePartNumber"), e.oemHardwarePartNumber!], [t("ecu.projectCode"), e.projectCode!], [t("ecu.hardwareNumber"), e.hardwareNumber!], [t("ecu.softwareNumber"), e.softwareNumber!],
     [t("ecu.softwareVersion"), e.softwareVersion!], [t("vehicle.engineCode"), e.engineCode!], [t("ecu.processor"), e.processor ?? t("ecu.unknownProcessor")],
     [t("ecu.endianness"), e.endianness ? t.tx(`endian.${e.endianness}`, e.endianness) : "?"], [t("ecu.flashSize"), fmtBytes(e.flashSize ?? 0)],
   ];

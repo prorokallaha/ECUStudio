@@ -109,8 +109,9 @@ public static class SignatureClassifier
 
         if (n >= 4 && first < 2000 && last is >= 2500 and <= 6500)
             guesses.Add(new AxisGuess(AxisQuantity.EngineSpeed, 0.85, 1, "rpm"));
-        if (first == 0 && last is >= 8000 and <= 10000)
-            guesses.Add(new AxisGuess(AxisQuantity.PedalPosition, 0.7, 0.01, "%"));
+        // Pedal 0…100 % at 0.01 %; real EDC16 axes often start at a small dead-band value (e.g. 1 %) instead of 0.
+        if (first <= 500 && last is >= 8000 and <= 10000)
+            guesses.Add(new AxisGuess(AxisQuantity.PedalPosition, first == 0 ? 0.7 : 0.6, 0.01, "%"));
         if (first <= 600 && last is >= 2500 and <= 9500)
         {
             guesses.Add(new AxisGuess(AxisQuantity.InjectionQuantity, 0.55, 0.01, "mg/stroke"));

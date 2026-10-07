@@ -1,7 +1,7 @@
 import type {
   ProjectLog,
   AIAnalysisResult, AnalysisReport, AssistantAnswer, ComponentKind, ComponentSpec, DataType, DynoRequest, DynoResult,
-  Endianness, FileRole, HardwareOverride, HexPageDto, JobEvent, MapData, MapHypothesisResult, PointInspection, Project,
+  Endianness, FileRole, HardwareOverride, HexPageDto, JobEvent, MapData, MapHypothesisResult, CandidateData, PointInspection, Project,
   ProjectFile, SystemInfo, VehicleVariant, VinInfo,
 } from "@/types/domain";
 
@@ -103,6 +103,7 @@ export const api = {
       request<PointInspection>(`/analyses/${id}/inspect`, { method: "POST", json: body }),
     decide: (id: string, candidateId: string, body: { decision: "confirm" | "reject"; role?: string; note?: string }) =>
       request<void>(`/analyses/${id}/candidates/${encodeURIComponent(candidateId)}/decision`, { method: "POST", json: body }),
+    candidateData: (id: string, candidateId: string) => request<CandidateData>(`/analyses/${id}/candidates/${encodeURIComponent(candidateId)}/data`),
     hypotheses: (id: string, candidateId: string) => request<MapHypothesisResult[]>(`/analyses/${id}/candidates/${encodeURIComponent(candidateId)}/hypotheses`, { method: "POST" }),
     startAI: (id: string) => request<{ jobId: string }>(`/analyses/${id}/ai`, { method: "POST" }),
     aiResult: (id: string) => request<AIAnalysisResult>(`/analyses/${id}/ai`),

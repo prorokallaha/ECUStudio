@@ -8,11 +8,11 @@ public sealed record TorrentFile(string Path, long Length);
 /// <summary>File list of a .torrent (BitTorrent v1 metainfo). Only metadata is read; nothing is downloaded.</summary>
 public sealed record TorrentMetadata(string Name, IReadOnlyList<TorrentFile> Files, long TotalLength)
 {
-    public const int MaxTorrentBytes = 64 * 1024 * 1024;
+    public const int MaxTorrentBytes = 256 * 1024 * 1024;
 
     public static TorrentMetadata Parse(byte[] data)
     {
-        if (data.Length > MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 64 MB");
+        if (data.Length > MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 256 MB");
         var pos = 0;
         if (Bencode.Read(data, ref pos) is not Dictionary<string, object> root || !root.TryGetValue("info", out var infoObj) || infoObj is not Dictionary<string, object> info)
             throw new DefinitionException("Not a .torrent file: missing 'info' dictionary");

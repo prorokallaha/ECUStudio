@@ -21,6 +21,7 @@ public sealed record JobStarted(Guid JobId);
 public sealed record WorkingHexDto(int Offset, int Length, int FileSize, string Working, string Original, IReadOnlyList<ByteRange> Changed);
 public sealed record InvestigateBody(string? MapId, string? CandidateId, string? Language);
 public sealed record AddLibraryRootBody(string Path, string? Name);
+public sealed record AddTorrentPathBody(string Path, string? DownloadPath);
 public sealed record UpdateLibraryRootBody(string? Name, string? DownloadPath);
 public sealed record LibraryEntryBody(string EntryId, bool Force = false);
 public sealed record InspectBody(double Rpm, double PedalPct, int Gear = 4, double AmbientTempC = 20, double AltitudeM = 0, double? AtmosphericPressureMbar = null, CoolantState Coolant = CoolantState.Normal);
@@ -126,9 +127,10 @@ public static class StudioEndpoints
         lib.MapPost("/roots", (AddLibraryRootBody b, StudioService s) => Results.Created("/api/v1/library/roots", s.Library.AddDirectory(b.Path, b.Name)));
         lib.MapPost("/torrents", async (IFormFile file, [FromForm] string? downloadPath, StudioService s, CancellationToken ct) =>
         {
-            if (file.Length > TorrentMetadata.MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 64 MB");
+            if (file.Length > TorrentMetadata.MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 256 MB");
             return Results.Created("/api/v1/library/roots", s.Library.AddTorrent(Path.GetFileName(file.FileName), await ReadUpload(file, ct), downloadPath));
         }).DisableAntiforgery();
+        lib.MapPost("/torrents/path", (AddTorrentPathBody b, StudioService s) => Results.Created("/api/v1/library/roots", s.Library.AddTorrentFile(b.Path, b.DownloadPath)));
         lib.MapPatch("/roots/{rootId:guid}", (Guid rootId, UpdateLibraryRootBody b, StudioService s) => s.Library.UpdateRoot(rootId, b.Name, b.DownloadPath));
         lib.MapDelete("/roots/{rootId:guid}", (Guid rootId, StudioService s) => { s.Library.RemoveRoot(rootId); return Results.NoContent(); });
         lib.MapPost("/roots/{rootId:guid}/scan", (Guid rootId, StudioService s, ILoggerFactory logs) =>
@@ -193,6 +195,7 @@ public static class StudioEndpoints
             if ((b.MapId is null) == (b.CandidateId is null)) throw new EcuStudioException("INVALID_TARGET", "Give exactly one of mapId or candidateId");
             return s.InvestigateMapAsync(analysisId, b.MapId, b.CandidateId, b.Language, ct);
         }).WithTags("ai");
+        a.MapGet("/candidates/{candidateId}/data", (Guid analysisId, string candidateId, StudioService s, CancellationToken ct) => s.CandidateDataAsync(analysisId, candidateId, ct));
         a.MapPost("/candidates/{candidateId}/hypotheses", (Guid analysisId, string candidateId, StudioService s, CancellationToken ct) => s.CandidateHypothesesAsync(analysisId, candidateId, ct)).WithTags("ai");
         return api;
     }

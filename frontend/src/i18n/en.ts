@@ -20,7 +20,7 @@ export const en: Dictionary = {
   severity: { Safe: "SAFE", Review: "REVIEW", Warning: "WARNING", Danger: "DANGER", Unknown: "UNKNOWN" },
   source: {
     OemSpec: "OEM", PublicSpec: "Public spec", Database: "Database", VariantTypical: "Database · typical", VinDecode: "VIN decode",
-    EcuBinary: "ECU binary", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "Definition DB", SignatureScan: "Signature scan",
+    EcuBinary: "ECU binary", FileName: "File name", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "Definition DB", SignatureScan: "Signature scan",
     DiagnosticLog: "Diagnostic log", Calculated: "Calculated", AIInferred: "AI inferred", User: "User entered", Assumption: "Assumption", Unknown: "Unknown",
   },
   role: {
@@ -223,7 +223,7 @@ export const en: Dictionary = {
   dashboard: {
     subtitle: "{mod} vs {stock} · analysis {v}", subtitleNoStock: "{mod} (no stock file — absolute values only) · analysis {v}",
     overallRisk: "Overall risk", data: "data {level}", moreData: "More data (stock, definitions, logs, verified hardware) narrows every range.",
-    mainFindings: "Main findings", items: "{n} items", fullLoad: "Full-load estimate", fullLoadSubtitle: "4th gear · 20 °C · sea level",
+    sameAxesCopies: " (+{n} with the same axes)", mainFindings: "Main findings", items: "{n} items", fullLoad: "Full-load estimate", fullLoadSubtitle: "4th gear · 20 °C · sea level",
     openDyno: "Open Virtual Dyno", definitions: "Definitions", checksums: "Checksums",
     criticalUnknowns: "Critical unknowns", noUnknowns: "None — all critical limits known.", dataAvailability: "Data availability",
     assumptions: "Assumptions used by the model", range: "range {r}", stock: "stock",
@@ -234,7 +234,7 @@ export const en: Dictionary = {
   },
   ecu: {
     subtitle: "{family} · plugin {plugin}", boschNumber: "Bosch number", oemPartNumber: "OEM part number", hardwareNumber: "Hardware number", softwareNumber: "Software number",
-    softwareVersion: "Software version", processor: "Processor", endianness: "Endianness", flashSize: "Flash size", unknownProcessor: "Unknown",
+    softwareVersion: "Software version", oemHardwarePartNumber: "VAG hardware part", projectCode: "Bosch project", processor: "Processor", endianness: "Endianness", flashSize: "Flash size", unknownProcessor: "Unknown",
     detection: "Detection", score: "score {s}", checksums: "Checksums", stored: "stored {s} · expected {c}",
     memoryMap: "Memory map", memoryMapSubtitle: "estimated sections; map addresses from definitions; changes vs stock",
     sections: "Sections", colName: "Name", colKind: "Kind", colStart: "Start", colEnd: "End", colSize: "Size", colNote: "Note",
@@ -323,6 +323,7 @@ export const en: Dictionary = {
     linkedTo: "Linked to", toRaise: "To raise confidence", raw: "Raw = (value − offset) / factor, {type} {endian}-endian, starting at {addr}.",
     seriesStock: "{y} stock",
     candidate: {
+      values: "Values (raw)", changedSummary: "{n} of {total} cells changed: mean {mean} %, from {min} to {max} %", unchanged: "Same as stock", rawHint: "Scaling unknown: values are raw",
       unknownMap: "Unknown map", openInHex: "open in hex", confirm: "CONFIRM {role}", reject: "REJECT", editDefinition: "EDIT DEFINITION",
       header: "Header", data: "Data", rawRange: "Raw range", endian: "Endian", axesRaw: "Axes (raw)",
       sigHyp: "Signature hypotheses", sigHypSubtitle: "deterministic classifier — 25 % mass is always reserved for “unknown”",
@@ -339,7 +340,7 @@ export const en: Dictionary = {
   mapEditor: {
     unknownMap: "Unknown map", candidateHyp: "Candidate: {role}, {pct}%",
     filter: { all: "All", defined: "Defined", modified: "Modified", candidates: "Candidates", unknown: "Unknown", user: "User" },
-    treeCandidates: "Candidates and unknown", treeEmpty: "Nothing found",
+    treeCandidates: "Candidates and unknown", candidateChanged: "changed {n} cells, {pct} %", treeEmpty: "Nothing found",
     editedNotAnalysed: "edited, not re-analysed", editedHint: "Values come from the working buffer after edits. Analysis, simulation and risks still use the original file — run the analysis again.",
     editedCells: "Cells changed in the working buffer: {n}",
     tabRaw: "Raw hex", tabCompare: "Stock vs Mod", heat: "Colour by value", modCurrent: "Mod (current)", deltaAbs: "Delta", deltaPct: "Delta %",

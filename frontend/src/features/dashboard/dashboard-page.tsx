@@ -9,7 +9,8 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { useSelection } from "@/stores/selection";
 import { MetricCard } from "./metric-card";
 import { severityTone, toneBg, toneText } from "@/lib/colors";
-import { severityRank, fmtParam } from "@/lib/format";
+import { severityRank, fmtParam, hex } from "@/lib/format";
+import { candidateLabel } from "@/components/calibration/map-label";
 import { cn } from "@/lib/cn";
 import { useT } from "@/i18n";
 
@@ -60,7 +61,7 @@ function Dashboard({ r }: { r: AnalysisReport }) {
                   className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-panel-2"
                 >
                   <SeverityBadge severity={f.severity} className="w-[70px] justify-center" />
-                  <span className="flex-1">{f.text}</span>
+                  <span className="flex-1">{findingText(t, r, f)}</span>
                   <span className="num text-[10px] text-fg-subtle">{f.code}</span>
                   <ChevronRight className="size-3.5 text-fg-subtle" />
                 </Link>
@@ -116,4 +117,13 @@ function Row({ k, v, src, warn }: { k: string; v: string; src?: any; warn?: bool
       </span>
     </div>
   );
+}
+
+/** Server findings are English; the ones with structured args are rendered in the UI language. */
+function findingText(t: ReturnType<typeof useT>, r: AnalysisReport, f: AnalysisReport["mainFindings"][number]): string {
+  const c = f.code === "CANDIDATE_CHANGED" && f.args?.candidateId ? r.candidates.find((x) => x.id === f.args!.candidateId) : undefined;
+  if (!c?.change) return f.text;
+  const copies = Number(f.args?.copies ?? 0);
+  const pct = `${c.change.meanDeltaPct > 0 ? "+" : ""}${c.change.meanDeltaPct}`;
+  return `${candidateLabel(t, c)} ${c.rows}×${c.cols} @${hex(c.address)}${copies > 0 ? t("dashboard.sameAxesCopies", { n: copies }) : ""}: ${t("mapEditor.candidateChanged", { n: `${c.change.changedCells}/${c.change.totalCells}`, pct })}`;
 }
