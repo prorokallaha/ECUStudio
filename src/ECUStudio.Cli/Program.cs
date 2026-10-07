@@ -1,3 +1,4 @@
+using ECUStudio.Simulation.Logs;
 using System.CommandLine;
 using System.Text.Json;
 using ECUStudio.Application.Analysis;
@@ -40,6 +41,7 @@ public static class Program
         var vinOpt = new Option<string?>("--vin") { Description = "17-character VIN (evidence, not proof of hardware)" };
         var defOpt = new Option<FileInfo?>("--definition", "-d") { Description = "Map definition (.xdf or .ecudef.json)" };
         var transOpt = new Option<string?>("--transmission") { Description = "Transmission catalog id, e.g. trans_dsg_dq250" };
+        var logOpt = new Option<FileInfo[]>("--log", "-l") { Description = "Diagnostic log (VCDS / CSV) recorded with this binary flashed; repeatable", AllowMultipleArgumentsPerToken = true };
         var failOn = new Option<string?>("--fail-on") { Description = "Exit with code 3 when overall risk is at least: review|warning|danger" };
         var definitionsDir = new Option<DirectoryInfo?>("--definitions-dir") { Description = "Definition DB directory (*.ecudef.json)", Recursive = true };
 
@@ -73,13 +75,13 @@ public static class Program
 
         // analyze
         var anFile = new Argument<FileInfo>("file") { Description = "Modified (or single) ECU binary" };
-        var analyze = new Command("analyze", "Full analysis: maps, diff, simulation, risk") { anFile, stockOpt, vinOpt, defOpt, transOpt, json, output, failOn };
+        var analyze = new Command("analyze", "Full analysis: maps, diff, simulation, risk") { anFile, stockOpt, vinOpt, defOpt, transOpt, logOpt, json, output, failOn };
         analyze.SetAction((pr, ct) =>
         {
             AnalysisSession? session = null;
             return Run(pr, output, async sp =>
             {
-                session = RunPipeline(sp, Existing(pr.GetValue(anFile)!), pr.GetValue(stockOpt), pr.GetValue(vinOpt), pr.GetValue(defOpt), null, pr.GetValue(transOpt), [], ct);
+                session = RunPipeline(sp, Existing(pr.GetValue(anFile)!), pr.GetValue(stockOpt), pr.GetValue(vinOpt), pr.GetValue(defOpt), null, pr.GetValue(transOpt), [], ct, pr.GetValue(logOpt));
                 return pr.GetValue(json) ? Serialize(session.Report) : MarkdownReport.Render(session.Report);
             }, _ => Task.CompletedTask, pr.GetValue(definitionsDir), ct, () => RiskGate(session, pr.GetValue(failOn)));
         });
@@ -161,7 +163,7 @@ public static class Program
     }
 
     private static AnalysisSession RunPipeline(IServiceProvider sp, FileInfo modified, FileInfo? stock, string? vin, FileInfo? definition,
-        string? variant, string? transmission, IReadOnlyList<HardwareOverride> hardware, CancellationToken ct)
+        string? variant, string? transmission, IReadOnlyList<HardwareOverride> hardware, CancellationToken ct, FileInfo[]? logs = null)
     {
         var pipeline = sp.GetRequiredService<AnalysisPipeline>();
         string? lastStep = null;
@@ -181,6 +183,7 @@ public static class Program
             PreferredVariantId = variant,
             TransmissionId = transmission,
             Overrides = hardware,
+            Logs = (logs ?? []).Select(l => new LogInput(l.Name, LogParser.Parse(l.Name, LogParser.Decode(File.ReadAllBytes(Existing(l).FullName))), false)).ToList(),
         }, progress, ct);
     }
 

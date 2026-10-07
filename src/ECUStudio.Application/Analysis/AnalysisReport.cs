@@ -1,3 +1,4 @@
+using ECUStudio.Simulation.Logs;
 using ECUStudio.Binary;
 using ECUStudio.Calibration.Analysis;
 using ECUStudio.Calibration.Model;
@@ -88,5 +89,6 @@ public sealed record AnalysisReport
     public required IReadOnlyList<KeyMetric> KeyMetrics { get; init; }
     public required IReadOnlyList<MainFinding> MainFindings { get; init; }
     public IReadOnlyList<string> Unknowns { get; init; } = [];
+    public IReadOnlyList<LogValidation> Logs { get; init; } = [];
     public string Disclaimer => "All values are engineering estimates with ranges and confidence, not measurements. No dyno measurement is implied.";
 }

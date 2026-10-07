@@ -400,6 +400,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    } & {
+                        /** Format: uuid */
+                        fileId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/logs/{logId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    logId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Project"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/files/{fileId}/role": {
         parameters: {
             query?: never;
@@ -1154,6 +1236,7 @@ export interface components {
             keyMetrics: components["schemas"]["KeyMetric"][];
             mainFindings: components["schemas"]["MainFinding"][];
             unknowns: string[];
+            logs: components["schemas"]["LogValidation"][];
             disclaimer: null | string;
         };
         AskBody: {
@@ -1192,6 +1275,20 @@ export interface components {
         };
         /** @enum {unknown} */
         CandidateStatus: "Candidate" | "Confirmed" | "Rejected";
+        ChannelValidation: {
+            channel: components["schemas"]["LogChannel"];
+            label: string;
+            unit: string;
+            bins: components["schemas"]["LogBin"][];
+            /** Format: double */
+            biasPct?: number;
+            /** Format: double */
+            withinRangePct?: number;
+            /** Format: double */
+            tolerancePct: number;
+            status: components["schemas"]["LogAgreement"];
+            note: string;
+        };
         ChecksumBlock: {
             name: string;
             /** Format: int32 */
@@ -1541,6 +1638,63 @@ export interface components {
         Limiter: "None" | "DriverWish" | "TorqueLimiter" | "GearLimiter" | "ConversionAxisEnd" | "SmokeLimiter" | "BoostTarget" | "BoostLimiter" | "Svbl" | "Spool";
         /** @enum {unknown} */
         LoadLevel: "Unknown" | "Low" | "Moderate" | "High" | "VeryHigh";
+        /** @enum {unknown} */
+        LogAgreement: "Agrees" | "Deviates" | "Insufficient";
+        LogBin: {
+            /** Format: double */
+            rpm: number;
+            /** Format: int32 */
+            samples: number;
+            /** Format: double */
+            measured: number;
+            /** Format: double */
+            model: number;
+            /** Format: double */
+            modelLow: number;
+            /** Format: double */
+            modelHigh: number;
+        };
+        /** @enum {unknown} */
+        LogChannel: "Time" | "Rpm" | "Pedal" | "BoostActual" | "BoostSpecified" | "AtmosphericPressure" | "MafActual" | "MafSpecified" | "IqActual" | "IqRequested" | "IntakeTemp" | "CoolantTemp" | "Egt";
+        LogColumn: {
+            channel: components["schemas"]["LogChannel"];
+            header: string;
+            unit: string;
+            /** Format: int32 */
+            sourceIndex: number;
+        };
+        LogPeaks: {
+            /** Format: double */
+            boostMbar: number;
+            /** Format: double */
+            mafMg: number;
+            /** Format: double */
+            iqMg: number;
+            /** Format: double */
+            egtC: number;
+            /** Format: double */
+            intakeTempC: number;
+        };
+        LogValidation: {
+            logId: string;
+            name: string;
+            format: string;
+            againstStock: boolean;
+            /** Format: int32 */
+            samples: number;
+            /** Format: int32 */
+            wotSamples: number;
+            wotCriterion: string;
+            channels: components["schemas"]["ChannelValidation"][];
+            peaks: components["schemas"]["LogPeaks"];
+            status: components["schemas"]["LogAgreement"];
+            /** Format: double */
+            atmosphericPressureMbar?: number;
+            mapping: components["schemas"]["LogColumn"][];
+            unmappedHeaders: string[];
+            warnings: string[];
+            explanation: string;
+        };
         MainFinding: {
             text: string;
             severity: components["schemas"]["Severity"];
@@ -1753,6 +1907,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             headline?: null | components["schemas"]["ProjectHeadline"];
+            logs: components["schemas"]["ProjectLog"][];
             /** Format: int32 */
             logCount: number;
             /** Format: int32 */
@@ -1779,6 +1934,23 @@ export interface components {
             engineCode: null | string;
             ecu: null | string;
             risk: null | components["schemas"]["Severity"];
+        };
+        ProjectLog: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            sha256: string;
+            /** Format: int32 */
+            size: number;
+            format: string;
+            /** Format: int32 */
+            samples: number;
+            channels: string[];
+            /** Format: uuid */
+            fileId?: null | string;
+            /** Format: date-time */
+            uploadedAt: string;
+            warnings: string[];
         };
         RejectedClaim: {
             agent: string;

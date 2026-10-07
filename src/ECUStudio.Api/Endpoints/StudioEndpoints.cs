@@ -65,6 +65,14 @@ public static class StudioEndpoints
             var effectiveRole = role ?? (project.Stock is null ? FileRole.Stock : FileRole.Modified);
             return Results.Created($"/api/v1/projects/{id}", await s.AddFileAsync(id, Path.GetFileName(file.FileName), ms.ToArray(), effectiveRole, label, notes, ct));
         }).DisableAntiforgery();
+        projects.MapPost("/{id:guid}/logs", async (Guid id, IFormFile file, [FromForm] Guid? fileId, StudioService s, CancellationToken ct) =>
+        {
+            if (file.Length > ApiHost.MaxUploadBytes) throw new EcuStudioException("LOG_FORMAT", $"Log too large (max {ApiHost.MaxUploadBytes / 1024 / 1024} MB)");
+            using var ms = new MemoryStream((int)file.Length);
+            await file.CopyToAsync(ms, ct);
+            return Results.Created($"/api/v1/projects/{id}", await s.AddLogAsync(id, Path.GetFileName(file.FileName), ms.ToArray(), fileId, ct));
+        }).DisableAntiforgery().WithTags("logs");
+        projects.MapDelete("/{id:guid}/logs/{logId:guid}", (Guid id, Guid logId, StudioService s, CancellationToken ct) => s.DeleteLogAsync(id, logId, ct)).WithTags("logs");
         projects.MapPut("/{id:guid}/files/{fileId:guid}/role", (Guid id, Guid fileId, FileRoleBody b, StudioService s, CancellationToken ct) => s.SetFileRoleAsync(id, fileId, b.Role, ct));
         projects.MapPut("/{id:guid}/hardware", (Guid id, HardwareBody b, StudioService s, CancellationToken ct) => s.SetHardwareAsync(id, b.Overrides, ct));
         projects.MapDelete("/{id:guid}/hardware/{kind}", (Guid id, ComponentKind kind, StudioService s, CancellationToken ct) => s.ResetHardwareAsync(id, kind, ct));

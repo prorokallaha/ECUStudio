@@ -49,7 +49,8 @@ public sealed class EfProjectStore(IDbContextFactory<StudioDbContext> factory) :
         await using var db = await factory.CreateDbContextAsync(ct);
         var row = await db.Projects.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (row is null) return;
-        var fileIds = Deserialize(row.Document).Files.Select(f => f.Id).ToList();
+        var doc = Deserialize(row.Document);
+        var fileIds = doc.Files.Select(f => f.Id).Concat(doc.Logs.Select(l => l.Id)).ToList();
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.CandidateDecisions.Where(d => d.ProjectId == id).ExecuteDeleteAsync(ct);
         await db.Analyses.Where(a => a.ProjectId == id).ExecuteDeleteAsync(ct);
@@ -57,6 +58,12 @@ public sealed class EfProjectStore(IDbContextFactory<StudioDbContext> factory) :
         db.Projects.Remove(row);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+    }
+
+    public async Task DeleteFileContentAsync(Guid fileId, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        await db.FileContents.Where(f => f.FileId == fileId).ExecuteDeleteAsync(ct);
     }
 
     public async Task SaveFileContentAsync(Guid fileId, byte[] content, CancellationToken ct = default)

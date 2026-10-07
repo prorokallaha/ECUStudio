@@ -123,6 +123,21 @@ public static class AIContextBuilder
         refs.Add("simulation:wot_stock");
         foreach (var sc in r.Simulation.Scenarios) refs.Add($"simulation:scenario.{sc.Id}");
 
+        root["diagnostic_logs"] = new JsonArray(r.Logs.Select(l => (JsonNode)new JsonObject
+        {
+            ["name"] = l.Name, ["against"] = l.AgainstStock ? "stock" : "modified", ["status"] = l.Status.ToString(), ["wot_samples"] = l.WotSamples,
+            ["channels"] = new JsonArray(l.Channels.Select(c =>
+            {
+                refs.Add($"log:{l.LogId}:{c.Channel}");
+                return (JsonNode)new JsonObject
+                {
+                    ["ref"] = $"log:{l.LogId}:{c.Channel}", ["channel"] = c.Label, ["unit"] = c.Unit, ["status"] = c.Status.ToString(),
+                    ["bias_pct"] = c.BiasPct, ["within_model_range_pct"] = c.WithinRangePct,
+                    ["bins"] = new JsonArray(c.Bins.Where((_, i) => i % 2 == 0).Select(b => (JsonNode)new JsonArray(b.Rpm, b.Measured, b.Model)).ToArray()),
+                };
+            }).ToArray()),
+        }).ToArray());
+
         root["component_limits"] = new JsonArray(r.Risk.Components.Select(c =>
         {
             refs.Add($"risk:{c.Component}");

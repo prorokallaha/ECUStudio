@@ -1,3 +1,4 @@
+using ECUStudio.Simulation.Logs;
 using ECUStudio.Binary;
 using ECUStudio.Calibration.Analysis;
 using ECUStudio.Calibration.Model;
@@ -21,12 +22,16 @@ public sealed record AnalysisRequest
     public string? PreferredVariantId { get; init; }
     public string? TransmissionId { get; init; }
     public IReadOnlyList<ConfirmedCandidate> ConfirmedCandidates { get; init; } = [];
-    public bool HasDiagnosticLogs { get; init; }
+    /// <summary>Diagnostic logs recorded on this vehicle; validated against the model, they raise data availability only when they agree.</summary>
+    public IReadOnlyList<LogInput> Logs { get; init; } = [];
     public Guid? ProjectId { get; init; }
     public GridOptions? Grid { get; init; }
 }
 
 public sealed record ConfirmedCandidate(int Address, MapRole Role);
+
+/// <param name="AgainstStock">True when the log was recorded while the stock calibration was flashed.</param>
+public sealed record LogInput(string Id, DiagnosticLog Log, bool AgainstStock);
 
 /// <summary>Everything computed for one analysis, kept in memory for interactive endpoints (dyno, inspector, hex).</summary>
 public sealed record AnalysisSession
@@ -54,7 +59,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
     public static readonly (string Id, string Label)[] Steps =
     [
         ("identify", "Identifying ECU"), ("read", "Reading calibration"), ("maps", "Finding maps"), ("stock", "Matching stock binary"),
-        ("vehicle", "Resolving vehicle"), ("components", "Resolving components"), ("dependencies", "Building dependencies"),
+        ("vehicle", "Resolving vehicle"), ("components", "Resolving components"), ("logs", "Validating logs"), ("dependencies", "Building dependencies"),
         ("simulation", "Running simulation"), ("risk", "Running risk analysis"),
     ];
 
@@ -112,7 +117,18 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         Step("vehicle", StepState.Done, 1, vehicle.Profile.Model.Text);
         Step("components", StepState.Done, 1, $"{req.Overrides.Count} override(s)");
 
-        var availability = Availability(req, resolution, vehicle.Profile);
+        // Logs are compared on model values (not confidences), so they are validated before the final confidence cap is known.
+        Step("logs", req.Logs.Count == 0 ? StepState.Skipped : StepState.Running);
+        var hw = vehicle.Profile.Hardware;
+        var preMod = new SimulationInput { Calibration = modBuild.Set, StockReference = stockSet, Hardware = hw, HasCommonRail = plugin.HasCommonRail };
+        var logValidations = req.Logs
+            .Where(l => !l.AgainstStock || stockSet is not null)
+            .Select(l => LogValidator.Validate(l.Id, l.Log, l.AgainstStock ? preMod with { Calibration = stockSet! } : preMod, engine, l.AgainstStock, LogValidator.Cylinders(hw)))
+            .ToList();
+        calFindings.AddRange(LogFindings(logValidations));
+        if (req.Logs.Count > 0) Step("logs", StepState.Done, 1, string.Join(", ", logValidations.Select(v => $"{v.Name}: {v.Status}")));
+
+        var availability = Availability(req, resolution, vehicle.Profile, logValidations);
 
         Step("dependencies", StepState.Running);
         var graph = DependencyGraphBuilder.Build(modBuild.Set, diff, plugin.HasCommonRail);
@@ -173,6 +189,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             KeyMetrics = KeyMetrics(modGrid, stockGrid, risk),
             MainFindings = MainFindings(diff, risk, modBuild.Set),
             Unknowns = risk.CriticalUnknowns.Concat(vehicle.Profile.Notes).Distinct().ToList(),
+            Logs = logValidations,
         };
 
         return new AnalysisSession
@@ -182,7 +199,24 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         };
     }
 
-    private static DataAvailability Availability(AnalysisRequest req, DefinitionResolution res, VehicleProfile profile)
+    private static IEnumerable<Finding> LogFindings(IReadOnlyList<LogValidation> logs)
+    {
+        foreach (var l in logs)
+            foreach (var c in l.Channels.Where(c => c.Status == LogAgreement.Deviates))
+                yield return new Finding
+                {
+                    Code = "MODEL_LOG_MISMATCH",
+                    Text = $"{c.Label}: logged values deviate from the model by {c.BiasPct:+0.#;-0.#} % (tolerance ±{c.TolerancePct:0} %) in '{l.Name}'. {c.Note}.",
+                    Severity = Severity.Review,
+                    Confidence = 0.7,
+                    Evidence = [new Evidence(EvidenceType.Log, $"log:{l.LogId}:{c.Channel}", $"bias {c.BiasPct:0.#} %, {c.Bins.Count} rpm bins, {l.WotSamples} full-load samples")],
+                    Assumptions = ["Log was recorded with the analysed calibration flashed" + (l.AgainstStock ? " (stock)" : "")],
+                    Unknowns = ["Sensor calibration and logging latency"],
+                    Source = FindingSource.Physics,
+                };
+    }
+
+    private static DataAvailability Availability(AnalysisRequest req, DefinitionResolution res, VehicleProfile profile, IReadOnlyList<LogValidation> logs)
     {
         var factors = new List<string> { "BIN" };
         var score = 0.3;
@@ -192,7 +226,9 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         { score += 0.2; factors.Add($"map definitions ({res.Source})"); }
         else factors.Add("maps from signature scan only");
         if (profile.Hardware.All.Any(c => c.UserVerified)) { score += 0.12; factors.Add("user-verified hardware"); }
-        if (req.HasDiagnosticLogs) { score += 0.15; factors.Add("diagnostic logs"); }
+        if (logs.Any(l => l.Status == LogAgreement.Deviates)) factors.Add("diagnostic log disagrees with model (not counted)");
+        else if (logs.Any(l => l.Status == LogAgreement.Agrees)) { score += 0.15; factors.Add("diagnostic log agrees with model"); }
+        else if (logs.Count > 0) factors.Add("diagnostic log without enough full-load data (not counted)");
         score = Math.Round(Math.Clamp(score, 0.2, 0.9), 2);
         return new DataAvailability(ConfidenceLevels.FromScore(score), score, factors);
     }

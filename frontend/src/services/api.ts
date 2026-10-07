@@ -1,4 +1,5 @@
 import type {
+  ProjectLog,
   AIAnalysisResult, AnalysisReport, AssistantAnswer, ComponentKind, ComponentSpec, DataType, DynoRequest, DynoResult,
   Endianness, FileRole, HardwareOverride, HexPageDto, JobEvent, MapData, MapHypothesisResult, PointInspection, Project,
   ProjectFile, SystemInfo, VehicleVariant, VinInfo,
@@ -61,6 +62,13 @@ export const api = {
       if (label) form.append("label", label);
       return request<ProjectFile>(`/projects/${id}/files`, { method: "POST", body: form });
     },
+    uploadLog: (id: string, file: File, fileId?: string) => {
+      const form = new FormData();
+      form.append("file", file);
+      if (fileId) form.append("fileId", fileId);
+      return request<ProjectLog>(`/projects/${id}/logs`, { method: "POST", body: form });
+    },
+    deleteLog: (id: string, logId: string) => request<Project>(`/projects/${id}/logs/${logId}`, { method: "DELETE" }),
     setFileRole: (id: string, fileId: string, role: FileRole) => request<Project>(`/projects/${id}/files/${fileId}/role`, { method: "PUT", json: { role } }),
     setHardware: (id: string, overrides: HardwareOverride[]) => request<Project>(`/projects/${id}/hardware`, { method: "PUT", json: { overrides } }),
     resetHardware: (id: string, kind: ComponentKind) => request<Project>(`/projects/${id}/hardware/${kind}`, { method: "DELETE" }),

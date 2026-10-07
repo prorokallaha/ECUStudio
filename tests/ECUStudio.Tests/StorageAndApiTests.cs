@@ -173,6 +173,7 @@ public sealed class ApiIntegrationTests : IAsyncLifetime
 
         var report = await _http.GetFromJsonAsync<JsonElement>($"/api/v1/analyses/{analysisId}");
         Assert.Equal("edc16u34", report.GetProperty("ecu").GetProperty("pluginId").GetString());
+        Assert.Equal("Agrees", report.GetProperty("logs")[0].GetProperty("status").GetString());
         var mapId = report.GetProperty("maps")[0].GetProperty("id").GetString();
         var map = await _http.GetFromJsonAsync<JsonElement>($"/api/v1/analyses/{analysisId}/maps/{mapId}");
         Assert.True(map.GetProperty("values").GetArrayLength() > 0);
@@ -186,6 +187,29 @@ public sealed class ApiIntegrationTests : IAsyncLifetime
         var ai = await _http.PostAsync($"/api/v1/analyses/{analysisId}/ai/ask", JsonContent.Create(new { question = "safe?" }));
         Assert.Equal(HttpStatusCode.ServiceUnavailable, ai.StatusCode);
         Assert.Equal("AI_UNAVAILABLE", (await ai.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Log_upload_validates_content()
+    {
+        var project = await (await _http.PostAsJsonAsync("/api/v1/projects", new { name = "logs" })).Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var id = project.GetProperty("id").GetGuid();
+
+        using var bad = new MultipartFormDataContent { { new ByteArrayContent("a,b\n1,2\n"u8.ToArray()), "file", "bad.csv" } };
+        var badResp = await _http.PostAsync($"/api/v1/projects/{id}/logs", bad);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, badResp.StatusCode);
+        Assert.Equal("LOG_FORMAT", (await badResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("error").GetProperty("code").GetString());
+
+        using var ok = new MultipartFormDataContent { { new ByteArrayContent("rpm,boost (mbar)\n2000,2100\n2500,2200\n"u8.ToArray()), "file", "pull.csv" } };
+        var okResp = await _http.PostAsync($"/api/v1/projects/{id}/logs", ok);
+        Assert.Equal(HttpStatusCode.Created, okResp.StatusCode);
+        var log = await okResp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.Equal(2, log.GetProperty("samples").GetInt32());
+
+        var after = await _http.GetFromJsonAsync<JsonElement>($"/api/v1/projects/{id}", JsonOpts);
+        Assert.Equal(1, after.GetProperty("logCount").GetInt32());
+        var del = await _http.DeleteAsync($"/api/v1/projects/{id}/logs/{log.GetProperty("id").GetGuid()}");
+        Assert.Equal(HttpStatusCode.OK, del.StatusCode);
     }
 
     [Fact]

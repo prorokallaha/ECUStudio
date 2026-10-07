@@ -1,3 +1,4 @@
+using ECUStudio.Simulation.Logs;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using ECUStudio.AI;
@@ -103,6 +104,50 @@ public sealed class StudioService(
         return file;
     }
 
+    public async Task<ProjectLog> AddLogAsync(Guid projectId, string fileName, byte[] content, Guid? fileId, CancellationToken ct = default)
+    {
+        var project = await GetProjectAsync(projectId, ct);
+        if (content.Length == 0) throw new LogFormatException("Log is empty");
+        if (content.Length > LogParser.MaxBytes) throw new LogFormatException($"Log is larger than {LogParser.MaxBytes / 1024 / 1024} MB");
+        if (fileId is { } fid && project.Files.All(f => f.Id != fid)) throw new NotFoundException($"File {fid} is not in this project");
+        var sha = Hashing.Sha256Hex(content);
+        if (project.Logs.Any(l => l.Sha256 == sha)) throw new EcuStudioException("DUPLICATE_FILE", "This exact log is already in the project");
+        var parsed = LogParser.Parse(fileName, LogParser.Decode(content)); // validates before anything is stored
+        var log = new ProjectLog
+        {
+            Id = Guid.NewGuid(), Name = fileName, Sha256 = sha, Size = content.Length, Format = parsed.Format, Samples = parsed.SampleCount,
+            Channels = parsed.Mapping.Select(m => m.Channel.ToString()).ToList(), FileId = fileId, Warnings = parsed.Warnings,
+        };
+        await store.SaveFileContentAsync(log.Id, content, ct);
+        await store.SaveAsync(project with { Logs = [.. project.Logs, log], UpdatedAt = DateTimeOffset.UtcNow }, ct);
+        return log;
+    }
+
+    public async Task<Project> DeleteLogAsync(Guid projectId, Guid logId, CancellationToken ct = default)
+    {
+        var p = await GetProjectAsync(projectId, ct);
+        if (p.Logs.All(l => l.Id != logId)) throw new NotFoundException($"Log {logId} not found");
+        p = p with { Logs = p.Logs.Where(l => l.Id != logId).ToList(), UpdatedAt = DateTimeOffset.UtcNow };
+        await store.SaveAsync(p, ct);
+        await store.DeleteFileContentAsync(logId, ct);
+        return p;
+    }
+
+    private async Task<List<LogInput>> LoadLogsAsync(Project project, ProjectFile modFile, ProjectFile? stockFile, CancellationToken ct)
+    {
+        var list = new List<LogInput>();
+        foreach (var l in project.Logs)
+        {
+            // A log belongs to the binary that was flashed while logging; unassigned logs are compared with the analysed file.
+            var againstStock = l.FileId is { } fid && fid == stockFile?.Id;
+            if (l.FileId is { } f && f != modFile.Id && !againstStock) continue;
+            var bytes = await store.GetFileContentAsync(l.Id, ct);
+            if (bytes is null) continue;
+            list.Add(new LogInput(l.Id.ToString(), LogParser.Parse(l.Name, LogParser.Decode(bytes)), againstStock));
+        }
+        return list;
+    }
+
     public async Task<Project> SetFileRoleAsync(Guid projectId, Guid fileId, FileRole role, CancellationToken ct = default)
     {
         var p = await GetProjectAsync(projectId, ct);
@@ -138,6 +183,18 @@ public sealed class StudioService(
         await AddFileAsync(p.Id, "stock_synthetic.bin", SyntheticEdc16U34.Generate(SyntheticVariant.Stock).Image, FileRole.Stock, "Original", null, ct);
         await AddFileAsync(p.Id, "stage1_v1_synthetic.bin", SyntheticEdc16U34.Generate(SyntheticVariant.Stage1).Image, FileRole.Modified, "Stage1_v1", null, ct);
         await AddFileAsync(p.Id, "stage1_aggressive_synthetic.bin", SyntheticEdc16U34.Generate(SyntheticVariant.Stage1Aggressive).Image, FileRole.Version, "Stage1_aggressive", null, ct);
+
+        // A synthetic full-load log "recorded" with Stage1_v1 flashed, so the Logs page has data to show.
+        var project = await GetProjectAsync(p.Id, ct);
+        var stage1 = project.Files.First(f => f.Label == "Stage1_v1");
+        var session = await Task.Run(() => pipeline.Run(new AnalysisRequest
+        {
+            Modified = BinaryImage.FromBytes(SyntheticEdc16U34.Generate(SyntheticVariant.Stage1).Image, stage1.Name),
+            Stock = BinaryImage.FromBytes(SyntheticEdc16U34.Generate(SyntheticVariant.Stock).Image, "stock_synthetic.bin"),
+            Vin = project.Vin,
+        }, null, ct), ct);
+        var csv = SyntheticLog.GenerateVcdsCsv(session.ModInput, engine);
+        await AddLogAsync(p.Id, "stage1_pull_3rd_gear_SYNTHETIC.csv", System.Text.Encoding.UTF8.GetBytes(csv), stage1.Id, ct);
         return await GetProjectAsync(p.Id, ct);
     }
 
@@ -176,6 +233,7 @@ public sealed class StudioService(
         var modBytes = await store.GetFileContentAsync(modFile.Id, ct) ?? throw new NotFoundException($"Content for file {modFile.Name} missing");
         var stockBytes = stockFile is null ? null : await store.GetFileContentAsync(stockFile.Id, ct);
         var decisions = await store.GetCandidateDecisionsAsync(project.Id, ct);
+        var logs = await LoadLogsAsync(project, modFile, stockFile, ct);
         var modImage = BinaryImage.FromBytes(modBytes, modFile.Name);
         var confirmed = decisions.Where(d => d.BinarySha256 == modImage.Sha256 && d.Decision == "confirm" && Enum.TryParse<MapRole>(d.Role, out _))
             .GroupBy(d => d.Address).Select(g => g.Last()).Select(d => new ConfirmedCandidate(d.Address, Enum.Parse<MapRole>(d.Role!))).ToList();
@@ -189,6 +247,7 @@ public sealed class StudioService(
             PreferredVariantId = project.PreferredVariantId,
             TransmissionId = project.TransmissionId,
             ConfirmedCandidates = confirmed,
+            Logs = logs,
             ProjectId = project.Id,
         }, progress, ct), ct);
 

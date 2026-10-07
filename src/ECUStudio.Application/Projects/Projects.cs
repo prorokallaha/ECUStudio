@@ -21,6 +21,21 @@ public sealed record ProjectFile
     public VersionSummary? Summary { get; init; }
 }
 
+/// <summary>A diagnostic log stored with the project. <see cref="FileId"/> names the binary that was flashed while logging.</summary>
+public sealed record ProjectLog
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public required string Sha256 { get; init; }
+    public required int Size { get; init; }
+    public required string Format { get; init; }
+    public required int Samples { get; init; }
+    public required IReadOnlyList<string> Channels { get; init; }
+    public Guid? FileId { get; init; }
+    public DateTimeOffset UploadedAt { get; init; } = DateTimeOffset.UtcNow;
+    public IReadOnlyList<string> Warnings { get; init; } = [];
+}
+
 public sealed record VersionSummary(int ChangedMaps, Estimate? PeakPowerHp, Estimate? PeakTorqueNm, Severity Risk, double Confidence, Guid AnalysisId);
 
 public sealed record Project
@@ -37,7 +52,8 @@ public sealed record Project
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
     /// <summary>Denormalised summary for the projects list.</summary>
     public ProjectHeadline? Headline { get; init; }
-    public int LogCount { get; init; }
+    public IReadOnlyList<ProjectLog> Logs { get; init; } = [];
+    public int LogCount => Logs.Count;
     public int SimulationCount { get; init; }
     public Guid? LatestAnalysisId { get; init; }
 
@@ -55,6 +71,7 @@ public interface IProjectStore
     Task DeleteAsync(Guid id, CancellationToken ct = default);
     Task SaveFileContentAsync(Guid fileId, byte[] content, CancellationToken ct = default);
     Task<byte[]?> GetFileContentAsync(Guid fileId, CancellationToken ct = default);
+    Task DeleteFileContentAsync(Guid fileId, CancellationToken ct = default);
     Task SaveAnalysisAsync(Guid analysisId, Guid projectId, string reportJson, CancellationToken ct = default);
     Task<string?> GetAnalysisAsync(Guid analysisId, CancellationToken ct = default);
     Task SaveCandidateDecisionAsync(CandidateDecision decision, CancellationToken ct = default);
@@ -76,6 +93,7 @@ public sealed class InMemoryProjectStore : IProjectStore
     public Task DeleteAsync(Guid id, CancellationToken ct = default) { _projects.TryRemove(id, out _); return Task.CompletedTask; }
     public Task SaveFileContentAsync(Guid fileId, byte[] content, CancellationToken ct = default) { _files[fileId] = content; return Task.CompletedTask; }
     public Task<byte[]?> GetFileContentAsync(Guid fileId, CancellationToken ct = default) => Task.FromResult(_files.GetValueOrDefault(fileId));
+    public Task DeleteFileContentAsync(Guid fileId, CancellationToken ct = default) { _files.TryRemove(fileId, out _); return Task.CompletedTask; }
     public Task SaveAnalysisAsync(Guid analysisId, Guid projectId, string reportJson, CancellationToken ct = default) { _analyses[analysisId] = reportJson; return Task.CompletedTask; }
     public Task<string?> GetAnalysisAsync(Guid analysisId, CancellationToken ct = default) => Task.FromResult(_analyses.GetValueOrDefault(analysisId));
     public Task SaveCandidateDecisionAsync(CandidateDecision decision, CancellationToken ct = default) { _decisions.Add(decision); return Task.CompletedTask; }
