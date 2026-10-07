@@ -104,7 +104,9 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         if (req.Stock is not null)
         {
             stockSet = CalibrationBuilder.Build(req.Stock, plugin.PluginId, definitions).Set;
-            var extra = candidates.Select(c => new ByteRange(c.HeaderAddress, 4 + 2 * (c.Rows + c.Cols + c.Rows * c.Cols)));
+            // Candidate maps and described checksum storage are known regions: a corrected checksum is not a code patch.
+            var extra = candidates.Select(c => new ByteRange(c.HeaderAddress, 4 + 2 * (c.Rows + c.Cols + c.Rows * c.Cols)))
+                .Concat(resolution.Checksums.Select(c => new ByteRange(c.StoredAt, c.EffectiveStoreSize)));
             diff = MapDiffer.Compare(req.Stock, req.Modified, stockSet, modBuild.Set, ident.Sections, extra);
             calFindings.AddRange(AnomalyDetector.Detect(diff, modBuild.Set));
             calFindings.AddRange(Stage1ConsistencyAnalyzer.Analyze(stockSet, modBuild.Set, diff, plugin.HasCommonRail));
@@ -171,7 +173,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             StockName = req.Stock?.FileName,
             Detection = detection,
             Ecu = ident,
-            Checksums = plugin.VerifyChecksums(req.Modified),
+            Checksums = plugin.VerifyChecksums(req.Modified, resolution.Checksums),
             Vehicle = vehicle,
             DataAvailability = availability,
             DefinitionSource = resolution.Source,

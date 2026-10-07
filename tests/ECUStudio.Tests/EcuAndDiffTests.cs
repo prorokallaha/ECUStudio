@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using ECUStudio.Application.Analysis;
 using ECUStudio.Binary;
 using ECUStudio.Calibration.Scanning;
@@ -31,11 +32,89 @@ public class PluginDetectionTests
     }
 
     [Fact]
-    public void Checksums_are_reported_honestly_not_as_valid()
+    public void Checksums_without_described_blocks_are_not_implemented_never_valid()
     {
         var img = Fixtures.Image(Fixtures.Stock, "stock.bin");
-        var report = Fixtures.Plugin().VerifyChecksums(img);
-        Assert.NotEqual(ChecksumStatus.Valid, report.Overall);
+        var report = Fixtures.Plugin().VerifyChecksums(img, []);
+        Assert.Equal(ChecksumStatus.NotImplemented, report.Overall);
+        Assert.Empty(report.Blocks);
+    }
+
+    [Fact]
+    public void Checksum_blocks_from_the_definition_are_verified()
+    {
+        var plugin = Fixtures.Plugin();
+        ChecksumReport Verify(Lazy<ECUStudio.Application.DevTools.SyntheticEdc16U34.Result> r)
+        {
+            var img = Fixtures.Image(r, "x.bin");
+            return plugin.VerifyChecksums(img, plugin.ResolveDefinitions(img, plugin.Identify(img), null).Checksums);
+        }
+
+        var stock = Verify(Fixtures.Stock);
+        Assert.Equal(ChecksumStatus.Valid, stock.Overall);
+        Assert.Equal(3, stock.Blocks.Count);
+        Assert.Contains("not a flash-readiness check", stock.Note, StringComparison.Ordinal);
+        Assert.Equal(ChecksumStatus.Valid, Verify(Fixtures.Stage1).Overall); // corrected like a tuning tool would
+
+        var aggressive = Verify(Fixtures.Aggressive); // code patched after correction
+        Assert.Equal(ChecksumStatus.Invalid, aggressive.Overall);
+        Assert.Equal(ChecksumStatus.Invalid, aggressive.Blocks.Single(b => b.Name == "Code CRC32").Status);
+        Assert.All(aggressive.Blocks.Where(b => b.Name != "Code CRC32"), b => Assert.Equal(ChecksumStatus.Valid, b.Status));
+    }
+}
+
+public class ChecksumVerifierTests
+{
+    private static byte[] Image()
+    {
+        var img = new byte[64];
+        for (var i = 0; i < 32; i++) img[i] = (byte)(i + 1);
+        return img;
+    }
+
+    private static ChecksumSpec Spec(ChecksumAlgorithm a, int storeSize = 4, Endianness e = Endianness.Big, bool complement = false) =>
+        new() { Name = "b", Start = 0, End = 32, Algorithm = a, StoredAt = 40, StoreSize = storeSize, Endian = e, Complement = complement };
+
+    [Theory]
+    [InlineData(ChecksumAlgorithm.Add8, 4, Endianness.Big, 528u)]            // 1 + … + 32
+    [InlineData(ChecksumAlgorithm.Add8, 1, Endianness.Big, 528u & 0xFF)]     // truncated to the stored width
+    [InlineData(ChecksumAlgorithm.Add16, 4, Endianness.Big, 0x10110u)]       // Σ (2k+1)·256 + (2k+2), k = 0..15
+    [InlineData(ChecksumAlgorithm.Add16, 4, Endianness.Little, 0x11100u)]
+    public void Sums_follow_word_size_endianness_and_width(ChecksumAlgorithm a, int size, Endianness e, uint expected) =>
+        Assert.Equal(expected, ChecksumVerifier.Compute(Image(), Spec(a, size, e)));
+
+    [Fact]
+    public void Crc_variants_match_reference_check_values()
+    {
+        Assert.Equal(0x29B1, ChecksumVerifier.Crc16Ccitt("123456789"u8));
+        var img = "123456789"u8.ToArray().Concat(new byte[8]).ToArray();
+        var spec = new ChecksumSpec { Name = "c", Start = 0, End = 9, Algorithm = ChecksumAlgorithm.Crc32, StoredAt = 12 };
+        Assert.Equal(0xCBF43926u, ChecksumVerifier.Compute(img, spec));
+    }
+
+    [Fact]
+    public void Stored_value_and_complement_are_compared()
+    {
+        var img = Image();
+        var sum = ChecksumVerifier.Compute(img, Spec(ChecksumAlgorithm.Add16));
+        BinaryPrimitives.WriteUInt32BigEndian(img.AsSpan(40), ~sum);
+        Assert.Equal(ChecksumStatus.Valid, ChecksumVerifier.Verify(img, [Spec(ChecksumAlgorithm.Add16, complement: true)], "t").Overall);
+        var bad = ChecksumVerifier.Verify(img, [Spec(ChecksumAlgorithm.Add16)], "t");
+        Assert.Equal(ChecksumStatus.Invalid, bad.Overall);
+        Assert.Equal("0x00010110", bad.Blocks[0].Computed);
+    }
+
+    [Theory]
+    [InlineData(0, 100, 40, "outside")]
+    [InlineData(0, 31, 40, "multiple of 2")]
+    [InlineData(0, 32, 30, "inside the covered range")]
+    [InlineData(0, 32, 62, "outside the image")]
+    public void Inconsistent_definitions_yield_unknown_not_valid(int start, int end, int storedAt, string message)
+    {
+        var spec = new ChecksumSpec { Name = "b", Start = start, End = end, Algorithm = ChecksumAlgorithm.Add16, StoredAt = storedAt };
+        var r = ChecksumVerifier.Verify(Image(), [spec], "t");
+        Assert.Equal(ChecksumStatus.Unknown, r.Overall);
+        Assert.Contains(message, r.Blocks[0].Computed, StringComparison.Ordinal);
     }
 }
 

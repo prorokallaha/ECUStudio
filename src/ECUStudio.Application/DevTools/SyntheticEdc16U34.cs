@@ -101,6 +101,11 @@ public static class SyntheticEdc16U34
         Write(img, ref addr, "unknown_b", "?", MapRole.Unknown, [1000, 2000, 3000, 4000, 5000], [700, 850, 1000], 1, 1, "rpm", "mbar", AxisQuantity.EngineSpeed, AxisQuantity.AtmosphericPressure, 1, "raw",
             (rpm, atm) => 4500 - rpm / 4 + atm);
 
+        // Checksum blocks (SYNTHETIC layout, not the real EDC16U34 scheme). Stock and Stage 1 are corrected the way a
+        // tuning tool would; the aggressive variant's code patch is applied afterwards, so its code CRC no longer matches.
+        if (addr > CalEnd) throw new InvalidOperationException($"Synthetic maps overflow the calibration block (0x{addr:X})");
+        foreach (var c in ChecksumBlocks) StoreChecksum(img, c);
+
         if (aggressive)
         {
             // simulated code patch
@@ -114,8 +119,25 @@ public static class SyntheticEdc16U34
             SoftwareNumbers = [SoftwareNumber],
             Synthetic = true,
             Maps = maps.Where(m => m.Role != MapRole.Unknown).ToList(),
+            Checksums = ChecksumBlocks,
         };
         return new Result(img, def);
+    }
+
+    private const int CalEnd = 0x70000;
+
+    private static readonly DefinitionFile.ChecksumEntry[] ChecksumBlocks =
+    [
+        new() { Name = "Code CRC32", Start = 0x00000, End = 0x40000, Algorithm = ChecksumAlgorithm.Crc32, StoredAt = 0x7FFF0 },
+        new() { Name = "Calibration ADD32", Start = 0x50000, End = CalEnd, Algorithm = ChecksumAlgorithm.Add32, StoredAt = 0x7FFF4 },
+        new() { Name = "Calibration ADD32 complement", Start = 0x50000, End = CalEnd, Algorithm = ChecksumAlgorithm.Add32, StoredAt = 0x7FFF8, Complement = true },
+    ];
+
+    private static void StoreChecksum(byte[] img, DefinitionFile.ChecksumEntry c)
+    {
+        var spec = new DefinitionFile { Plugin = "edc16u34", Checksums = [c] }.ToChecksumSpecs()[0];
+        var v = ChecksumVerifier.Compute(img, spec);
+        BinaryPrimitives.WriteUInt32BigEndian(img.AsSpan(c.StoredAt), c.Complement ? ~v : v);
     }
 
     private static double EtaShape(double rpm) => rpm switch

@@ -75,16 +75,20 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
         var notes = new List<string>();
         List<MapDefinition> definitions;
         string source;
+        IReadOnlyList<ChecksumSpec> checksums = [];
 
         if (external is not null)
         {
             definitions = external.Maps.ToList();
             source = $"{external.Source}: {external.Name}";
+            notes.AddRange(external.Notes);
+            checksums = external.Checksums;
         }
         else if (definitionDb.Find(Id, identification.SoftwareNumber.Text) is { } file)
         {
             definitions = file.ToDefinitions(SourceType.DefinitionDb).ToList();
             source = $"Definition DB: {file.Title ?? identification.SoftwareNumber.Text}";
+            checksums = file.ToChecksumSpecs();
             if (file.Synthetic) notes.Add("Definition is SYNTHETIC (test/demo data), not a real vehicle definition.");
         }
         else
@@ -134,12 +138,13 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
             notes.Add($"{group.Key} taken from signature scan candidate {ordered[0].Id} (confidence {ordered[0].Best!.Confidence:0.00}); unconfirmed.");
         }
 
-        return new DefinitionResolution(definitions, candidates, source, notes);
+        return new DefinitionResolution(definitions, candidates, source, notes) { Checksums = checksums };
     }
 
-    public ChecksumReport VerifyChecksums(BinaryImage image) => new(
-        ChecksumStatus.NotImplemented, [],
-        "EDC16U34 checksum verification is not implemented. ECUStudio analyses files; it does not prepare them for flashing.");
+    public ChecksumReport VerifyChecksums(BinaryImage image, IReadOnlyList<ChecksumSpec> blocks) => blocks.Count == 0
+        ? new(ChecksumStatus.NotImplemented, [],
+            "No checksum blocks are described for this software version, and EDC16U34 checksum locations are not guessed. Add them to the definition to verify. ECUStudio analyses files; it does not prepare them for flashing.")
+        : ChecksumVerifier.Verify(image.Span, blocks, "EDC16U34, blocks from the definition");
 
     public static MapDefinition FromCandidate(MapCandidate c, MapRole role)
     {

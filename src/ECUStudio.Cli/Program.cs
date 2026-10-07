@@ -39,7 +39,7 @@ public static class Program
         var output = new Option<FileInfo?>("--out", "-o") { Description = "Write output to a file instead of stdout" };
         var stockOpt = new Option<FileInfo?>("--stock", "-s") { Description = "Stock (original) binary for diff and baseline" };
         var vinOpt = new Option<string?>("--vin") { Description = "17-character VIN (evidence, not proof of hardware)" };
-        var defOpt = new Option<FileInfo?>("--definition", "-d") { Description = "Map definition (.xdf or .ecudef.json)" };
+        var defOpt = new Option<FileInfo?>("--definition", "-d") { Description = "Map definition (.xdf, .a2l or .ecudef.json)" };
         var transOpt = new Option<string?>("--transmission") { Description = "Transmission catalog id, e.g. trans_dsg_dq250" };
         var logOpt = new Option<FileInfo[]>("--log", "-l") { Description = "Diagnostic log (VCDS / CSV) recorded with this binary flashed; repeatable", AllowMultipleArgumentsPerToken = true };
         var failOn = new Option<string?>("--fail-on") { Description = "Exit with code 3 when overall risk is at least: review|warning|danger" };
@@ -57,7 +57,7 @@ public static class Program
             var registry = sp.GetRequiredService<PluginRegistry>();
             var (plugin, detection) = registry.Detect(image);
             var ident = plugin.Identify(image);
-            var checksums = plugin.VerifyChecksums(image);
+            var checksums = plugin.VerifyChecksums(image, plugin.ResolveDefinitions(image, ident, null).Checksums);
             if (pr.GetValue(json)) return Serialize(new { file = image.FileName, sha256 = image.Sha256, size = image.Length, detection, identification = ident, checksums });
             return $"""
                 File       {image.FileName} ({image.Length / 1024} KB) sha256 {image.Sha256[..16]}…

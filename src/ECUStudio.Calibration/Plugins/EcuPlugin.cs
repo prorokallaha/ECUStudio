@@ -31,7 +31,11 @@ public sealed record DefinitionResolution(
     IReadOnlyList<MapDefinition> Definitions,
     IReadOnlyList<MapCandidate> Candidates,
     string Source,
-    IReadOnlyList<string> Notes);
+    IReadOnlyList<string> Notes)
+{
+    /// <summary>Checksum blocks described by the resolved definition (empty when none are known).</summary>
+    public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
+}
 
 /// <summary>
 /// ECU family plugin. The core (calibration analysis, simulation, risk) only talks to this
@@ -50,11 +54,18 @@ public interface IEcuPlugin
     DetectionResult Detect(BinaryImage image);
     EcuIdentification Identify(BinaryImage image);
     DefinitionResolution ResolveDefinitions(BinaryImage image, EcuIdentification identification, ExternalDefinition? external);
-    ChecksumReport VerifyChecksums(BinaryImage image);
+    /// <summary>Verifies the checksum blocks a definition describes; never guesses undescribed ones.</summary>
+    ChecksumReport VerifyChecksums(BinaryImage image, IReadOnlyList<ChecksumSpec> blocks);
 }
 
 /// <summary>A user-supplied definition (XDF, DAMOS, A2L, OLS export, native JSON).</summary>
-public sealed record ExternalDefinition(SourceType Source, IReadOnlyList<MapDefinition> Maps, string Name);
+public sealed record ExternalDefinition(SourceType Source, IReadOnlyList<MapDefinition> Maps, string Name)
+{
+    /// <summary>Importer remarks (skipped objects, rebasing) surfaced in the definition resolution.</summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
+    /// <summary>Checksum blocks described by the definition file (native JSON only).</summary>
+    public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
+}
 
 public sealed class PluginRegistry
 {

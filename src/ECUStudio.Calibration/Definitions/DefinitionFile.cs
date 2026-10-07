@@ -19,6 +19,22 @@ public sealed record DefinitionFile
     /// <summary>True for synthetic definitions used in tests/demos. Never treated as real-vehicle data.</summary>
     public bool Synthetic { get; init; }
     public IReadOnlyList<MapEntry> Maps { get; init; } = [];
+    /// <summary>Checksum blocks of this software version. Only described blocks are ever verified.</summary>
+    public IReadOnlyList<ChecksumEntry> Checksums { get; init; } = [];
+
+    public sealed record ChecksumEntry
+    {
+        public required string Name { get; init; }
+        [JsonConverter(typeof(HexIntConverter))] public int Start { get; init; }
+        /// <summary>Exclusive end of the covered range.</summary>
+        [JsonConverter(typeof(HexIntConverter))] public int End { get; init; }
+        public ChecksumAlgorithm Algorithm { get; init; }
+        [JsonConverter(typeof(HexIntConverter))] public int StoredAt { get; init; }
+        public int StoreSize { get; init; } = 4;
+        public Endianness Endian { get; init; } = Endianness.Big;
+        public uint Seed { get; init; }
+        public bool Complement { get; init; }
+    }
 
     public sealed record MapEntry
     {
@@ -86,6 +102,12 @@ public sealed record DefinitionFile
         Source = source,
         Confidence = Synthetic ? Math.Min(m.Confidence, 0.9) : m.Confidence,
         Description = m.Description,
+    }).ToList();
+
+    public IReadOnlyList<ChecksumSpec> ToChecksumSpecs() => Checksums.Select(c => new ChecksumSpec
+    {
+        Name = c.Name, Start = c.Start, End = c.End, Algorithm = c.Algorithm, StoredAt = c.StoredAt,
+        StoreSize = c.StoreSize, Endian = c.Endian, Seed = c.Seed, Complement = c.Complement,
     }).ToList();
 
     private static AxisDefinition? ToAxis(AxisEntry? a) => a is null ? null : new AxisDefinition

@@ -46,7 +46,17 @@ function Ecu({ r }: { r: AnalysisReport }) {
           <CardHeader title="Checksums" actions={<Badge tone={r.checksums.overall === "Valid" ? "ok" : r.checksums.overall === "Invalid" ? "danger" : "unknown"}>{r.checksums.overall}</Badge>} />
           <CardBody className="space-y-1.5 text-xs text-fg-muted">
             <div>{r.checksums.note}</div>
-            {r.checksums.blocks.map((b, i) => <div key={i} className="num">{b.name}: {hex(b.start)}–{hex(b.end)} {b.status}</div>)}
+            {r.checksums.blocks.map((b, i) => (
+              <div key={i} className="rounded border border-border px-2 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-fg">{b.name}</span>
+                  <Badge tone={b.status === "Valid" ? "ok" : b.status === "Invalid" ? "danger" : "unknown"}>{b.status}</Badge>
+                </div>
+                <div className="num">{b.algorithm}</div>
+                {b.stored && <div className="num">stored {b.stored} · expected {b.computed}</div>}
+                {!b.stored && b.computed && <div>{b.computed}</div>}
+              </div>
+            ))}
           </CardBody>
         </Card>
         <Card className="xl:col-span-3">

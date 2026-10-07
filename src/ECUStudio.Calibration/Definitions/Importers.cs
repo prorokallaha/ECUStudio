@@ -17,7 +17,9 @@ public interface IDefinitionImporter
 public static class DefinitionImporters
 {
     public static readonly IReadOnlyList<IDefinitionImporter> All =
-        [new NativeJsonImporter(), new XdfImporter(), new NotYetSupportedImporter(SourceType.A2L, ".a2l"), new NotYetSupportedImporter(SourceType.Damos, ".dam", ".damos"), new NotYetSupportedImporter(SourceType.Database, ".ols")];
+        [new NativeJsonImporter(), new XdfImporter(), new A2lImporter(),
+         new NotYetSupportedImporter(SourceType.Damos, "DAMOS import is not supported: export the project as ASAP2 (*.a2l) from the same tool and import that.", ".dam", ".damos"),
+         new NotYetSupportedImporter(SourceType.Database, "OLS is a closed WinOLS project format and cannot be read: export the map pack as XDF or A2L from WinOLS.", ".ols")];
 
     public static ExternalDefinition Import(string fileName, string content)
     {
@@ -34,17 +36,16 @@ public sealed class NativeJsonImporter : IDefinitionImporter
     public ExternalDefinition Import(string fileName, string content)
     {
         var file = DefinitionFile.Parse(content);
-        return new ExternalDefinition(SourceType.User, file.ToDefinitions(SourceType.User), fileName);
+        return new ExternalDefinition(SourceType.User, file.ToDefinitions(SourceType.User), fileName) { Checksums = file.ToChecksumSpecs() };
     }
 }
 
-/// <summary>Explicit placeholder: the format is recognised but not parsed yet. Fails loudly instead of guessing.</summary>
-public sealed class NotYetSupportedImporter(SourceType source, params string[] extensions) : IDefinitionImporter
+/// <summary>Recognised but unreadable format. Fails loudly with a conversion hint instead of guessing.</summary>
+public sealed class NotYetSupportedImporter(SourceType source, string message, params string[] extensions) : IDefinitionImporter
 {
     public SourceType Source => source;
     public bool CanImport(string fileName) => extensions.Any(e => fileName.EndsWith(e, StringComparison.OrdinalIgnoreCase));
-    public ExternalDefinition Import(string fileName, string content) =>
-        throw new DefinitionException($"{source} import is planned but not implemented yet. Convert to XDF or *.ecudef.json for now.");
+    public ExternalDefinition Import(string fileName, string content) => throw new DefinitionException(message);
 }
 
 /// <summary>
@@ -177,6 +178,18 @@ public sealed class XdfImporter : IDefinitionImporter
     internal static MapRole GuessRole(string title)
     {
         var t = title.ToLowerInvariant();
+        // German Bosch/DAMOS descriptions are matched first: they are what A2L files usually carry.
+        if (t.Contains("fahrerwunsch")) return MapRole.DriverWish;
+        if (t.Contains("rauch")) return MapRole.SmokeLimiter;
+        if (t.Contains("ladedruck") && (t.Contains("begrenz") || t.Contains("max"))) return MapRole.BoostLimiter;
+        if (t.Contains("ladedruck")) return MapRole.BoostTarget;
+        if (t.Contains("einspritzbeginn") || t.Contains("spritzbeginn")) return MapRole.Soi;
+        if (t.Contains("einspritzdauer") || t.Contains("ansteuerdauer")) return MapRole.Duration;
+        if (t.Contains("moment") && t.Contains("menge")) return MapRole.TorqueToIq;
+        if (t.Contains("gang") && t.Contains("moment")) return MapRole.GearTorqueLimiter;
+        if (t.Contains("momentenbegrenz") || t.Contains("drehmomentbegrenz")) return MapRole.TorqueLimiter;
+        if (t.Contains("raildruck")) return MapRole.RailPressure;
+        if (t.Contains("abgastemp")) return MapRole.EgtProtection;
         if (t.Contains("driver") && t.Contains("wish")) return MapRole.DriverWish;
         if (t.Contains("smoke")) return MapRole.SmokeLimiter;
         if (t.Contains("svbl") || t.Contains("single value")) return MapRole.Svbl;
