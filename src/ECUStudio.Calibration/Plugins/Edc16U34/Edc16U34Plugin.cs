@@ -160,7 +160,10 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
         return new MapDefinition
         {
             Id = $"scan_{role.ToString().ToLowerInvariant()}_{c.Address:X6}",
-            Name = $"{role.DisplayName()} (scanned)",
+            // Used for simulation only; labelled as unconfirmed so the hypothesis is not read as the map's name.
+            Name = c.Status == CandidateStatus.Confirmed
+                ? $"{role.DisplayName()} (confirmed by user)"
+                : $"Unconfirmed {role.DisplayName()} candidate @0x{c.Address:X} (scan {c.Best?.Confidence * 100 ?? 0:0} %)",
             Role = role,
             Address = c.Address,
             Rows = c.Rows,

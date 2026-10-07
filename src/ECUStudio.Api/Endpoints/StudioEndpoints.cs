@@ -93,6 +93,8 @@ public static class StudioEndpoints
             s.PreviewLibraryDefinitionAsync(id, b.EntryId, ct)).WithTags("definitions");
         projects.MapPost("/{id:guid}/definition/library", (Guid id, LibraryEntryBody b, StudioService s, CancellationToken ct) =>
             s.BindLibraryDefinitionAsync(id, b.EntryId, b.Force, ct)).WithTags("definitions");
+        projects.MapPost("/{id:guid}/files/from-library", async (Guid id, AddFromLibraryBody b, StudioService s, CancellationToken ct) =>
+            Results.Created($"/api/v1/projects/{id}", await s.AddFileFromLibraryAsync(id, b, ct))).WithTags("library");
         projects.MapDelete("/{id:guid}/definition", (Guid id, StudioService s, CancellationToken ct) => s.UnbindDefinitionAsync(id, ct)).WithTags("definitions");
 
         // ---- binary editing (patch model; stored files are never modified, saving creates a new file) ----
@@ -178,6 +180,7 @@ public static class StudioEndpoints
             return Results.NoContent();
         });
 
+        a.MapGet("/stock-candidates", (Guid analysisId, StudioService s, CancellationToken ct) => s.StockCandidatesAsync(analysisId, ct)).WithTags("library");
         a.MapGet("/definitions", (Guid analysisId, StudioService s, CancellationToken ct) => s.LibraryMatchesAsync(analysisId, ct)).WithTags("definitions");
 
         // ---- AI ----

@@ -55,6 +55,8 @@ public sealed record SimulationSummary
     public required IReadOnlyList<ScenarioSummary> Scenarios { get; init; }
     public int EvaluatedPoints { get; init; }
     public IReadOnlyList<string> Assumptions { get; init; } = [];
+    /// <summary>Per output: computed, partial or UNKNOWN, and the missing maps/hardware/files (modified calibration).</summary>
+    public IReadOnlyList<OutputCoverage> Coverage { get; init; } = [];
 }
 
 public sealed record ScenarioSummary(string Id, string Label, Estimate PeakPowerHp, Estimate PeakTorqueNm, Estimate MaxEgtC, Estimate MinLambda, Estimate MaxPressureRatio);

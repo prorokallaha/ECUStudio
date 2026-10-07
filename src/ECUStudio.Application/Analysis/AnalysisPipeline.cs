@@ -200,7 +200,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             UnmappedChanges = diff?.UnmappedChanges ?? [],
             CalibrationFindings = calFindings,
             Dependencies = graph,
-            Simulation = SummarizeSimulation(modGrid, stockGrid, modInput.Assumptions),
+            Simulation = SummarizeSimulation(modGrid, stockGrid, modInput.Assumptions) with { Coverage = SimulationCoverage.Evaluate(modInput) },
             Risk = risk,
             Explanations = explanations,
             KeyMetrics = KeyMetrics(modGrid, stockGrid, risk),

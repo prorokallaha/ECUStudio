@@ -246,4 +246,29 @@ public sealed class DefinitionLibraryTests : IDisposable
         var cleared = await studio.UnbindDefinitionAsync(project.Id);
         Assert.Null(cleared.Definition);
     }
+
+    [Fact]
+    public async Task Stock_candidates_come_from_project_files_and_library_dumps_with_the_same_software()
+    {
+        Put("dumps/EDC16U34_stock.bin", Fixtures.Stock.Value.Image);
+        await using var sp = Services();
+        var studio = sp.GetRequiredService<StudioService>();
+        var root = studio.Library.AddDirectory(Path.Combine(_dir, "dumps"), null);
+        studio.Library.Scan(root.Id);
+        var project = await studio.CreateProjectAsync("stock", null, null);
+        var mod = await studio.AddFileAsync(project.Id, "stage1.bin", Fixtures.Stage1.Value.Image, FileRole.Modified, null, null);
+        var session = await studio.RunAnalysisAsync(await studio.GetProjectAsync(project.Id), mod, null, null, CancellationToken.None);
+
+        var fromLibrary = Assert.Single(await studio.StockCandidatesAsync(session.Report.Id));
+        Assert.Equal(StockCandidateOrigin.Library, fromLibrary.Origin);
+        Assert.True(fromLibrary.SameSoftware);
+        Assert.True(fromLibrary.DifferingBytes > 0);
+
+        var added = await studio.AddFileFromLibraryAsync(project.Id, new AddFromLibraryBody(fromLibrary.LibraryEntryId!, FileRole.Version, null));
+        var fromProject = Assert.Single(await studio.StockCandidatesAsync(session.Report.Id)); // the library copy is not listed twice
+        Assert.Equal(added.Id, fromProject.FileId);
+        Assert.Equal(MatchLevel.Exact, fromProject.Level); // SW + HW match: still only a candidate
+        Assert.Equal(fromLibrary.DifferingBytes, fromProject.DifferingBytes);
+        Assert.Equal("EDC16U34_stock.bin", added.Name);
+    }
 }

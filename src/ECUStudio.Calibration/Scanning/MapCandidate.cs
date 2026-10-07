@@ -37,6 +37,16 @@ public sealed record MapCandidate
     public string? DecisionNote { get; init; }
 
     public RoleHypothesis? Best => Hypotheses.Count == 0 ? null : Hypotheses[0];
+
+    /// <summary>
+    /// Label shown for the candidate. A hypothesis is never presented as the map's name:
+    /// "Unknown map · candidate: Torque to IQ, 18 %" until the user confirms a role.
+    /// </summary>
+    public string DisplayName => Status == CandidateStatus.Confirmed && ConfirmedRole is { } r
+        ? $"{r.DisplayName()} (confirmed by user)"
+        : Best is { Role: not MapRole.Unknown } b
+            ? $"Unknown map {Rows}×{Cols} @0x{Address:X} · candidate: {b.Role.DisplayName()}, {b.Confidence * 100:0} %"
+            : $"Unknown map {Rows}×{Cols} @0x{Address:X}";
     public int XAxisAddress => HeaderAddress + 4;
     public int YAxisAddress => XAxisAddress + Cols * 2;
 }
