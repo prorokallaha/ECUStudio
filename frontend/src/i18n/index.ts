@@ -60,7 +60,16 @@ export function useT() {
   const t = (key: TKey, params?: TParams) => translate(lang, key, params);
   /** Runtime key with fallback, e.g. tx(`role.${map.role}`, map.role). */
   const tx = (key: string, fallback?: string, params?: TParams) => translateDynamic(lang, key, fallback, params);
-  return Object.assign(t, { tx, lang });
+  /** Localises the sentinel strings produced by lib/format (fmtParam / fmtEstimate): "UNKNOWN", "N/A". */
+  const val = (s: string) => localizeValue(lang, s);
+  return Object.assign(t, { tx, val, lang });
+}
+
+/** "UNKNOWN" / "N/A" sentinels from lib/format → localised text; any other string is returned unchanged. */
+export function localizeValue(lang: Lang, s: string): string {
+  if (s === "UNKNOWN") return translate(lang, "common.unknown");
+  if (s === "N/A") return translate(lang, "common.na");
+  return s;
 }
 
 export function currentLang(): Lang {

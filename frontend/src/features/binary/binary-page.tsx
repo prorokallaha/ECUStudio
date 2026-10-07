@@ -12,12 +12,14 @@ import { useUI } from "@/stores/ui";
 import { useSelection } from "@/stores/selection";
 import { api, ApiError } from "@/services/api";
 import { hex } from "@/lib/format";
+import { useT } from "@/i18n";
 
 export function BinaryPage() {
   return <WithReport>{(r) => <BinaryViewer r={r} />}</WithReport>;
 }
 
 function BinaryViewer({ r }: { r: AnalysisReport }) {
+  const t = useT();
   const { params, href, router } = useWorkspace();
   const ui = useUI();
   const select = useSelection((s) => s.select);
@@ -47,7 +49,7 @@ function BinaryViewer({ r }: { r: AnalysisReport }) {
       const res = await api.analyses.search(r.id, smode, sq.trim(), type, ui.hexEndian);
       setResults(res); setRi(0);
       if (res.length) jump(res[0], smode === "hex" ? Math.ceil(sq.replace(/\s/g, "").length / 2) : smode === "ascii" ? sq.length : wordSize);
-      else toast("No matches");
+      else toast(t("binary.noMatches"));
     } catch (e) { toast.error(e instanceof ApiError ? e.message : String(e)); }
   };
   const step = (d: number) => { if (!results.length) return; const n = (ri + d + results.length) % results.length; setRi(n); jump(results[n], hl?.length ?? 1); };
@@ -72,31 +74,31 @@ function BinaryViewer({ r }: { r: AnalysisReport }) {
   }, [selected, loader, ui.hexEndian]);
 
   const changedRanges = useMemo(() => [
-    ...r.maps.filter((m) => m.modified).map((m) => ({ start: m.address, len: m.rows * m.cols * 2, label: m.name })),
-    ...(r.unmappedChanges ?? []).map((u) => ({ start: u.start, len: u.length, label: `unmapped (${u.section})` })),
+    ...r.maps.filter((m) => m.modified).map((m) => ({ start: m.address, len: m.rows * m.cols * 2, label: m.name, section: null as string | null })),
+    ...(r.unmappedChanges ?? []).map((u) => ({ start: u.start, len: u.length, label: "", section: u.section as string | null })),
   ].sort((a, b) => a.start - b.start), [r]);
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Binary"
-        subtitle={`${r.modifiedName} · ${fileSize.toLocaleString()} bytes · ${r.changedBytes ?? 0} changed bytes vs stock`}
+        title={t("nav.binary")}
+        subtitle={t("binary.subtitle", { name: r.modifiedName, size: fileSize.toLocaleString(), changed: r.changedBytes ?? 0 })}
         actions={<>
           <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); const n = parseInt(goto.replace(/^0x/i, ""), 16); if (Number.isFinite(n)) jump(n); }}>
-            <Input value={goto} onChange={(e) => setGoto(e.target.value)} placeholder="Go to 0x…" className="num w-28" />
-            <Button size="icon" type="submit" title="Go to address"><CornerDownRight className="size-3.5" /></Button>
+            <Input value={goto} onChange={(e) => setGoto(e.target.value)} placeholder={t("binary.gotoPlaceholder")} className="num w-28" />
+            <Button size="icon" type="submit" title={t("binary.gotoTitle")}><CornerDownRight className="size-3.5" /></Button>
           </form>
         </>}
       />
       <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-        <Segmented value={mode} onChange={setMode} options={[{ value: "modified", label: "Modified" }, { value: "stock", label: "Stock" }, { value: "split", label: "Stock | Mod" }].filter((o) => r.stockSha256 || o.value === "modified") as any} />
-        <Segmented value={String(ui.hexWord) as "8" | "16" | "32"} onChange={(v) => ui.setHex({ hexWord: Number(v) as 8 | 16 | 32 })} options={[{ value: "8", label: "8-bit" }, { value: "16", label: "16-bit" }, { value: "32", label: "32-bit" }]} />
+        <Segmented value={mode} onChange={setMode} options={[{ value: "modified", label: t("common.modified") }, { value: "stock", label: t("common.stock") }, { value: "split", label: t("binary.modeSplit") }].filter((o) => r.stockSha256 || o.value === "modified") as any} />
+        <Segmented value={String(ui.hexWord) as "8" | "16" | "32"} onChange={(v) => ui.setHex({ hexWord: Number(v) as 8 | 16 | 32 })} options={[{ value: "8", label: t("binary.bit8") }, { value: "16", label: t("binary.bit16") }, { value: "32", label: t("binary.bit32") }]} />
         <Segmented value={ui.hexEndian} onChange={(v) => ui.setHex({ hexEndian: v })} options={[{ value: "Big", label: "BE" }, { value: "Little", label: "LE" }]} />
-        <Segmented value={ui.hexSigned ? "s" : "u"} onChange={(v) => ui.setHex({ hexSigned: v === "s" })} options={[{ value: "u", label: "unsigned" }, { value: "s", label: "signed" }]} />
+        <Segmented value={ui.hexSigned ? "s" : "u"} onChange={(v) => ui.setHex({ hexSigned: v === "s" })} options={[{ value: "u", label: t("binary.unsigned") }, { value: "s", label: t("binary.signed") }]} />
         <Segmented value={decimal ? "dec" : "hex"} onChange={(v) => setDecimal(v === "dec")} options={[{ value: "hex", label: "HEX" }, { value: "dec", label: "DEC" }]} />
         <form className="ml-auto flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); doSearch(); }}>
           <Select value={smode} onChange={(e) => setSmode(e.target.value as any)}><option value="hex">hex</option><option value="ascii">ascii</option><option value="int">int</option><option value="float">float</option></Select>
-          <Input value={sq} onChange={(e) => setSq(e.target.value)} placeholder={smode === "hex" ? "1037 ?? 99" : smode === "ascii" ? "EDC16" : "value"} className="num w-36" />
+          <Input value={sq} onChange={(e) => setSq(e.target.value)} placeholder={smode === "hex" ? "1037 ?? 99" : smode === "ascii" ? "EDC16" : t("binary.valuePlaceholder")} className="num w-36" />
           <Button size="icon" type="submit"><Search className="size-3.5" /></Button>
           {results.length > 0 && <><span className="num text-[11px] text-fg-muted">{ri + 1}/{results.length}</span><Button size="icon" variant="ghost" type="button" onClick={() => step(-1)}><ChevronUp className="size-3.5" /></Button><Button size="icon" variant="ghost" type="button" onClick={() => step(1)}><ChevronDown className="size-3.5" /></Button></>}
         </form>
@@ -111,34 +113,34 @@ function BinaryViewer({ r }: { r: AnalysisReport }) {
             <>
               <div className="flex items-center justify-between">
                 <span className="num text-sm font-semibold">{hex(selected)}</span>
-                <Button size="xs" variant="ghost" onClick={() => ui.addBookmark(r.modifiedSha256, selected, prompt("Bookmark label", hex(selected)) ?? hex(selected))}><BookmarkPlus className="size-3" />Bookmark</Button>
+                <Button size="xs" variant="ghost" onClick={() => ui.addBookmark(r.modifiedSha256, selected, prompt(t("binary.bookmarkPrompt"), hex(selected)) ?? hex(selected))}><BookmarkPlus className="size-3" />{t("binary.bookmark")}</Button>
               </div>
               {info.regs.map((g, i) => (
                 <div key={i} className="flex items-center gap-1.5 text-xs">
-                  <Badge tone={g.kind === "candidate" ? "ai" : g.kind === "section" ? "unknown" : "ok"}>{g.kind}</Badge>
+                  <Badge tone={g.kind === "candidate" ? "ai" : g.kind === "section" ? "unknown" : "ok"}>{t.tx(`binary.region.${g.kind}`, g.kind)}</Badge>
                   {g.mapId ? <button className="truncate text-calc hover:underline" onClick={() => router.push(href(`maps/${g.mapId}`))}>{g.label}</button> : <span className="truncate">{g.label}</span>}
                 </div>
               ))}
               <div>
-                <SectionTitle className="mb-1">Value at offset ({ui.hexEndian === "Big" ? "big" : "little"}-endian)</SectionTitle>
-                <table className="w-full text-xs"><thead className="text-[10px] text-fg-subtle"><tr><th className="text-left font-medium">type</th><th className="text-right font-medium">modified</th>{r.stockSha256 && <th className="text-right font-medium">stock</th>}</tr></thead>
-                  <tbody>{info.rows.map(([t, m, s]) => (
-                    <tr key={t} className={m !== s && s !== null ? "text-warn" : ""}><td className="text-fg-subtle">{t}</td><td className="num text-right">{fmtVal(m)}</td>{r.stockSha256 && <td className="num text-right text-fg-muted">{fmtVal(s)}</td>}</tr>
+                <SectionTitle className="mb-1">{t("binary.valueAt", { endian: ui.hexEndian === "Big" ? "big-endian" : "little-endian" })}</SectionTitle>
+                <table className="w-full text-xs"><thead className="text-[10px] text-fg-subtle"><tr><th className="text-left font-medium">{t("binary.colType")}</th><th className="text-right font-medium">{t("binary.colModified")}</th>{r.stockSha256 && <th className="text-right font-medium">{t("binary.colStock")}</th>}</tr></thead>
+                  <tbody>{info.rows.map(([ty, m, s]) => (
+                    <tr key={ty} className={m !== s && s !== null ? "text-warn" : ""}><td className="text-fg-subtle">{ty}</td><td className="num text-right">{fmtVal(m)}</td>{r.stockSha256 && <td className="num text-right text-fg-muted">{fmtVal(s)}</td>}</tr>
                   ))}</tbody>
                 </table>
               </div>
             </>
-          ) : <div className="text-xs text-fg-muted">Click a byte to inspect values, region and stock difference. Arrow keys move the cursor.</div>}
+          ) : <div className="text-xs text-fg-muted">{t("binary.hint")}</div>}
 
           <div>
-            <SectionTitle className="mb-1">Changed regions</SectionTitle>
+            <SectionTitle className="mb-1">{t("binary.changedRegions")}</SectionTitle>
             <div className="max-h-48 space-y-0.5 overflow-y-auto">
-              {changedRanges.map((c) => <button key={c.start} onClick={() => jump(c.start, c.len)} className="flex w-full justify-between rounded px-1 py-0.5 text-left text-[11px] hover:bg-panel-2"><span className="num text-warn">{hex(c.start)}</span><span className="truncate pl-2 text-fg-muted">{c.label}</span></button>)}
-              {!changedRanges.length && <div className="text-[11px] text-fg-subtle">{r.stockSha256 ? "No changes" : "No stock file to compare"}</div>}
+              {changedRanges.map((c) => <button key={c.start} onClick={() => jump(c.start, c.len)} className="flex w-full justify-between rounded px-1 py-0.5 text-left text-[11px] hover:bg-panel-2"><span className="num text-warn">{hex(c.start)}</span><span className="truncate pl-2 text-fg-muted">{c.section !== null ? t("binary.unmapped", { section: t.tx(`sectionKind.${c.section}`, c.section) }) : c.label}</span></button>)}
+              {!changedRanges.length && <div className="text-[11px] text-fg-subtle">{r.stockSha256 ? t("binary.noChanges") : t("binary.noStockCompare")}</div>}
             </div>
           </div>
           <div>
-            <SectionTitle className="mb-1">Bookmarks</SectionTitle>
+            <SectionTitle className="mb-1">{t("binary.bookmarks")}</SectionTitle>
             {bookmarks.map((b) => (
               <div key={b.offset} className="flex items-center gap-1 text-[11px]">
                 <Bookmark className="size-3 text-attn" />
@@ -147,10 +149,10 @@ function BinaryViewer({ r }: { r: AnalysisReport }) {
                 <button onClick={() => ui.removeBookmark(r.modifiedSha256, b.offset)} className="text-fg-subtle hover:text-danger"><Trash2 className="size-3" /></button>
               </div>
             ))}
-            {!bookmarks.length && <div className="text-[11px] text-fg-subtle">None</div>}
+            {!bookmarks.length && <div className="text-[11px] text-fg-subtle">{t("common.none")}</div>}
           </div>
           <div>
-            <SectionTitle className="mb-1">Maps</SectionTitle>
+            <SectionTitle className="mb-1">{t("nav.maps")}</SectionTitle>
             <div className="max-h-56 space-y-0.5 overflow-y-auto">
               {r.maps.map((m) => <button key={m.id} onClick={() => jump(m.address, m.rows * m.cols * 2)} className="flex w-full justify-between rounded px-1 py-0.5 text-left text-[11px] hover:bg-panel-2"><span className="num text-fg-muted">{hex(m.address)}</span><span className={`truncate pl-2 ${m.modified ? "text-calc" : ""}`}>{m.name}</span></button>)}
             </div>

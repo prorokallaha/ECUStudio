@@ -5,6 +5,7 @@ import { EChart } from "@/components/charts/echart";
 import { axisStyle, chartTheme, tooltipStyle } from "@/components/charts/theme";
 import { useUI } from "@/stores/ui";
 import type { CellRef } from "./map-grid";
+import { useT } from "@/i18n";
 
 interface Data { xAxis: number[]; yAxis: number[]; values: number[]; stock?: number[] | null; unit?: string; xName?: string; yName?: string }
 
@@ -13,6 +14,7 @@ const at = (d: Data, r: number, c: number, src: number[]) => src[r * d.xAxis.len
 /** 2D: one line per Y breakpoint (stock dashed). Selection highlights the row of the selected cell. */
 export function Map2D({ d, selected, onPick }: { d: Data; selected: CellRef[]; onPick: (c: CellRef) => void }) {
   const theme = useUI((s) => s.theme);
+  const tr = useT();
   const option = useMemo<EChartsOption>(() => {
     const t = chartTheme();
     const ax = axisStyle(t);
@@ -23,7 +25,7 @@ export function Map2D({ d, selected, onPick }: { d: Data; selected: CellRef[]; o
       const color = palette[r % palette.length];
       const emph = selRow === undefined || selRow === r;
       series.push({ name: `${y}`, type: "line", symbolSize: 5, data: d.xAxis.map((x, c) => [x, at(d, r, c, d.values)]), lineStyle: { color, width: emph ? 2 : 1, opacity: emph ? 1 : 0.35 }, itemStyle: { color, opacity: emph ? 1 : 0.35 } });
-      if (d.stock) series.push({ name: `${y} stock`, type: "line", symbol: "none", data: d.xAxis.map((x, c) => [x, at(d, r, c, d.stock!)]), lineStyle: { color, width: 1, type: "dashed", opacity: emph ? 0.7 : 0.2 }, tooltip: { show: false } });
+      if (d.stock) series.push({ name: tr("maps.seriesStock", { y }), type: "line", symbol: "none", data: d.xAxis.map((x, c) => [x, at(d, r, c, d.stock!)]), lineStyle: { color, width: 1, type: "dashed", opacity: emph ? 0.7 : 0.2 }, tooltip: { show: false } });
     });
     return {
       animation: false,
@@ -35,7 +37,7 @@ export function Map2D({ d, selected, onPick }: { d: Data; selected: CellRef[]; o
       series,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d, selected, theme]);
+  }, [d, selected, theme, tr.lang]);
   return <EChart option={option} onEvents={{ click: (p: any) => { const r = d.yAxis.findIndex((y) => String(y) === String(p.seriesName)); if (r >= 0) onPick({ row: r, col: p.dataIndex }); } }} />;
 }
 
@@ -74,13 +76,14 @@ export function MapHeatmap({ d, delta, onPick }: { d: Data; delta?: boolean; onP
 /** 3D surface (echarts-gl, lazy-loaded). Stock as a translucent wireframe when available. */
 export function Map3D({ d }: { d: Data }) {
   const theme = useUI((s) => s.theme);
+  const tr = useT();
   const option = useMemo<EChartsOption>(() => {
     const t = chartTheme();
     const pts = (src: number[]) => d.yAxis.flatMap((y, r) => d.xAxis.map((x, c) => [x, y, at(d, r, c, src)]));
     const vals = d.values;
     const axis3 = (name?: string) => ({ name, nameTextStyle: { color: t.subtle }, axisLabel: { color: t.subtle, fontSize: 9 }, axisLine: { lineStyle: { color: t.grid } }, splitLine: { lineStyle: { color: t.grid } } });
-    const series: any[] = [{ type: "surface", name: "Modified", data: pts(vals), shading: "color", wireframe: { show: true, lineStyle: { color: "rgba(0,0,0,.35)", width: 0.5 } } }];
-    if (d.stock) series.push({ type: "surface", name: "Stock", data: pts(d.stock), itemStyle: { color: t.stock, opacity: 0.25 }, wireframe: { show: true, lineStyle: { color: t.stock, width: 0.6 } } });
+    const series: any[] = [{ type: "surface", name: tr("common.modified"), data: pts(vals), shading: "color", wireframe: { show: true, lineStyle: { color: "rgba(0,0,0,.35)", width: 0.5 } } }];
+    if (d.stock) series.push({ type: "surface", name: tr("common.stock"), data: pts(d.stock), itemStyle: { color: t.stock, opacity: 0.25 }, wireframe: { show: true, lineStyle: { color: t.stock, width: 0.6 } } });
     return {
       tooltip: {},
       visualMap: { show: false, dimension: 2, min: Math.min(...vals), max: Math.max(...vals), inRange: { color: ["#1f4e9c", "#1f77b4", "#2ca02c", "#ffbf00", "#ff7f0e", "#d62728"] }, seriesIndex: 0 },
@@ -91,6 +94,6 @@ export function Map3D({ d }: { d: Data }) {
       series,
     } as EChartsOption;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d, theme]);
+  }, [d, theme, tr.lang]);
   return <EChart option={option} gl />;
 }

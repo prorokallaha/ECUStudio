@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api, ApiError } from "@/services/api";
 import { useJobs } from "@/stores/jobs";
 import { useWorkspace } from "./use-workspace";
+import { currentLang, translate } from "@/i18n";
 
 export const keys = {
   projects: ["projects"] as const,
@@ -46,8 +47,8 @@ export function useRunAnalysis() {
         api.jobs.subscribe(jobId, (e) => {
           apply(e);
           if (e.status === "Completed" && e.analysisId) resolve(e.analysisId);
-          if (e.status === "Failed") reject(new ApiError(422, "ANALYSIS_FAILED", e.error ?? "Analysis failed"));
-        }, () => reject(new ApiError(0, "SSE", "Lost connection to progress stream")));
+          if (e.status === "Failed") reject(new ApiError(422, "ANALYSIS_FAILED", e.error ?? translate(currentLang(), "errors.analysisFailed")));
+        }, () => reject(new ApiError(0, "SSE", translate(currentLang(), "errors.sseLost"))));
       }).then((analysisId) => {
         qc.invalidateQueries({ queryKey: keys.project(projectId) });
         qc.invalidateQueries({ queryKey: keys.projects });

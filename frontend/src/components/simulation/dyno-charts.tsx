@@ -5,6 +5,7 @@ import type { DynoResult, Estimate, PointResult } from "@/types/domain";
 import { EChart } from "@/components/charts/echart";
 import { axisStyle, chartTheme, tooltipStyle } from "@/components/charts/theme";
 import { useUI } from "@/stores/ui";
+import { useT } from "@/i18n";
 
 type Pick = (p: PointResult) => Estimate | undefined;
 
@@ -26,47 +27,50 @@ function seriesWithBand(points: PointResult[], pick: Pick, name: string, color: 
 /** Main Virtual Dyno chart: torque + power, stock vs modified, each with its uncertainty envelope. */
 export function DynoMainChart({ d, onPick, group }: { d: DynoResult; onPick: (rpm: number) => void; group: string }) {
   const theme = useUI((s) => s.theme);
+  const tr = useT();
   const option = useMemo<EChartsOption>(() => {
     const t = chartTheme();
     const ax = axisStyle(t);
+    const N = { torqueMod: tr("dyno.torqueMod"), powerMod: tr("dyno.powerMod"), torqueStock: tr("dyno.torqueStock"), powerStock: tr("dyno.powerStock") };
     const series = [
-      ...seriesWithBand(d.modified.points, (p) => p.torque, "Torque · mod", t.mod),
-      ...seriesWithBand(d.modified.points, (p) => p.powerHp, "Power · mod", t.warn, { yAxisIndex: 1 }),
+      ...seriesWithBand(d.modified.points, (p) => p.torque, N.torqueMod, t.mod),
+      ...seriesWithBand(d.modified.points, (p) => p.powerHp, N.powerMod, t.warn, { yAxisIndex: 1 }),
       ...(d.stock ? [
-        ...seriesWithBand(d.stock.points, (p) => p.torque, "Torque · stock", t.stock, { dashed: true }),
-        ...seriesWithBand(d.stock.points, (p) => p.powerHp, "Power · stock", t.stock, { yAxisIndex: 1, dashed: true, band: false }),
+        ...seriesWithBand(d.stock.points, (p) => p.torque, N.torqueStock, t.stock, { dashed: true }),
+        ...seriesWithBand(d.stock.points, (p) => p.powerHp, N.powerStock, t.stock, { yAxisIndex: 1, dashed: true, band: false }),
       ] : []),
     ];
     const beyond = d.modified.points.filter((p) => p.beyondCalibratedRange).map((p) => p.point.rpm);
     return {
       animation: false,
       grid: { left: 52, right: 52, top: 30, bottom: 26 },
-      legend: { top: 0, data: ["Torque · mod", "Power · mod", "Torque · stock", "Power · stock"], textStyle: { color: t.muted, fontSize: 11 }, itemWidth: 14, itemHeight: 2 },
+      legend: { top: 0, data: [N.torqueMod, N.powerMod, N.torqueStock, N.powerStock], textStyle: { color: t.muted, fontSize: 11 }, itemWidth: 14, itemHeight: 2 },
       tooltip: { trigger: "axis", ...tooltipStyle(t), axisPointer: { type: "line", lineStyle: { color: t.calc } },
         formatter: (ps: any) => {
           const arr = (Array.isArray(ps) ? ps : [ps]).filter((p: any) => !String(p.seriesName).includes("·lo") && !String(p.seriesName).includes("·band"));
           const rpm = arr[0]?.value?.[0] ?? arr[0]?.data?.value?.[0];
-          return `<b>${rpm} rpm</b><br/>` + arr.map((p: any) => `${p.marker}${p.seriesName}: <b>${Number((p.data?.value ?? p.value)[1]).toFixed(0)}</b>`).join("<br/>") + "<br/><span style='opacity:.6'>click for calculation trace</span>";
+          return `<b>${rpm} rpm</b><br/>` + arr.map((p: any) => `${p.marker}${p.seriesName}: <b>${Number((p.data?.value ?? p.value)[1]).toFixed(0)}</b>`).join("<br/>") + `<br/><span style='opacity:.6'>${tr("dyno.clickTrace")}</span>`;
         } },
       xAxis: { type: "value", min: d.request.rpmStart, max: d.request.rpmEnd, ...ax, splitLine: { show: false } },
       yAxis: [{ type: "value", name: "Nm", ...ax }, { type: "value", name: "hp", ...ax, splitLine: { show: false } }],
       series: [
         ...series,
-        ...(beyond.length ? [{ type: "line", name: "beyond", data: [], markArea: { silent: true, itemStyle: { color: t.unknown, opacity: 0.08 }, label: { show: true, color: t.subtle, fontSize: 10, position: "insideTop", formatter: "beyond calibrated range" }, data: [[{ xAxis: Math.min(...beyond) }, { xAxis: d.request.rpmEnd }]] } }] : []),
+        ...(beyond.length ? [{ type: "line", name: "beyond", data: [], markArea: { silent: true, itemStyle: { color: t.unknown, opacity: 0.08 }, label: { show: true, color: t.subtle, fontSize: 10, position: "insideTop", formatter: tr("dyno.beyond") }, data: [[{ xAxis: Math.min(...beyond) }, { xAxis: d.request.rpmEnd }]] } }] : []),
       ] as any,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d, theme]);
+  }, [d, theme, tr.lang]);
   return <EChart option={option} group={group} onAxisClick={onPick} />;
 }
 
 /** Small synced chart (boost / IQ / λ / EGT) sharing the axis pointer with the main chart. */
 export function DynoAuxChart({ d, pick, title, unit, group, onPick, refLine }: { d: DynoResult; pick: Pick; title: string; unit: string; group: string; onPick: (rpm: number) => void; refLine?: { value: number; label: string } }) {
   const theme = useUI((s) => s.theme);
+  const tr = useT();
   const option = useMemo<EChartsOption>(() => {
     const t = chartTheme();
     const ax = axisStyle(t);
-    const mod = seriesWithBand(d.modified.points, pick, `${title} mod`, t.mod);
+    const mod = seriesWithBand(d.modified.points, pick, tr("dyno.seriesMod", { name: title }), t.mod);
     if (refLine) mod[mod.length - 1].markLine = { silent: true, symbol: "none", lineStyle: { color: t.warn, type: "dashed" }, label: { color: t.warn, fontSize: 9, formatter: refLine.label }, data: [{ yAxis: refLine.value }] };
     return {
       animation: false,
@@ -75,9 +79,9 @@ export function DynoAuxChart({ d, pick, title, unit, group, onPick, refLine }: {
       tooltip: { trigger: "axis", ...tooltipStyle(t), valueFormatter: (v: any) => (typeof v === "number" ? v.toFixed(unit === "-" ? 2 : 0) : v) },
       xAxis: { type: "value", min: d.request.rpmStart, max: d.request.rpmEnd, ...ax, splitLine: { show: false } },
       yAxis: { type: "value", scale: true, ...ax },
-      series: [...mod, ...(d.stock ? seriesWithBand(d.stock.points, pick, `${title} stock`, t.stock, { dashed: true, band: false }) : [])] as any,
+      series: [...mod, ...(d.stock ? seriesWithBand(d.stock.points, pick, tr("dyno.seriesStock", { name: title }), t.stock, { dashed: true, band: false }) : [])] as any,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d, theme, pick, title, unit, refLine]);
+  }, [d, theme, pick, title, unit, refLine, tr.lang]);
   return <EChart option={option} group={group} onAxisClick={onPick} />;
 }

@@ -111,7 +111,7 @@ function Vehicle({ project }: { project: Project }) {
                 return (
                   <div key={k} className="flex items-center justify-between gap-2">
                     <span className="text-fg-subtle">{t.tx(`vehicle.${k}`, k)}</span>
-                    <span className="flex items-center gap-1.5"><span className={fmtParam(p) === "UNKNOWN" ? "text-unknown font-semibold" : ""}>{fmtParam(p)}</span>{p && <SourceBadge source={p.source} />}{p && <ConfidenceBadge score={p.confidence} showScore={false} />}</span>
+                    <span className="flex items-center gap-1.5"><span className={fmtParam(p) === "UNKNOWN" ? "text-unknown font-semibold" : ""}>{t.val(fmtParam(p))}</span>{p && <SourceBadge source={p.source} />}{p && <ConfidenceBadge score={p.confidence} showScore={false} />}</span>
                   </div>
                 );
               })}

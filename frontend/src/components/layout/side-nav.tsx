@@ -38,18 +38,18 @@ export function SideNav({ hasReport }: { hasReport: boolean }) {
             >
               {active && <span className="absolute -left-1.5 top-1 bottom-1 w-0.5 rounded bg-calc" />}
               <Icon className={cn("size-4 shrink-0", active && "text-calc")} />
-              {!collapsed && <span className="truncate">{t.tx(`nav.${item.section}`, item.label)}</span>}
+              {!collapsed && <span className="truncate">{t(item.label)}</span>}
             </Link>
           );
           return (
             <div key={item.section}>
               {sep && <div className="mx-3 my-1.5 border-t border-border" />}
-              {collapsed ? <Tooltip content={t.tx(`nav.${item.section}`, item.label)} side="right">{link}</Tooltip> : link}
+              {collapsed ? <Tooltip content={t(item.label)} side="right">{link}</Tooltip> : link}
             </div>
           );
         })}
       </div>
-      <button onClick={toggle} className="flex h-8 items-center justify-center border-t border-border text-fg-subtle hover:text-fg" title="Collapse navigation">
+      <button onClick={toggle} className="flex h-8 items-center justify-center border-t border-border text-fg-subtle hover:text-fg" title={t("layout.collapseNav")}>
         {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
       </button>
     </nav>

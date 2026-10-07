@@ -6,17 +6,19 @@ import { nodeStateTone, toneSoft, cssVar } from "@/lib/colors";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { useUI } from "@/stores/ui";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 type N = Node<{ n: DependencyNode; dim: boolean }>;
 
 function MapNode({ data }: NodeProps<N>) {
+  const t = useT();
   const n = data.n;
   const tone = nodeStateTone[n.state];
   return (
     <div className={cn("w-44 rounded-md border px-2.5 py-1.5 text-xs shadow-sm transition-opacity", toneSoft[tone], "bg-panel", data.dim && "opacity-25")}>
       <Handle type="target" position={Position.Left} className="!size-1.5 !border-0 !bg-border-strong" />
       <div className="truncate font-semibold text-fg">{n.label}</div>
-      <div className="flex items-center justify-between text-[10px]"><span className="uppercase tracking-wide">{n.state === "NotApplicable" ? "N/A" : n.state}</span>{!n.mapId && n.state === "Unknown" && <span className="text-unknown">not identified</span>}</div>
+      <div className="flex items-center justify-between text-[10px]"><span className="uppercase tracking-wide">{t.tx(`nodeState.${n.state}`, n.state)}</span>{!n.mapId && n.state === "Unknown" && <span className="text-unknown">{t("dependencies.notIdentified")}</span>}</div>
       {n.detail && <div className="mt-0.5 truncate text-[10px] text-fg-muted" title={n.detail}>{n.detail}</div>}
       <Handle type="source" position={Position.Right} className="!size-1.5 !border-0 !bg-border-strong" />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { create } from "zustand";
+import { currentLang, translate } from "@/i18n";
 
 /**
  * What the engineer is looking at right now. The AI panel attaches exactly this (plus the analysis id),
@@ -23,14 +24,16 @@ export const useSelection = create<SelectionState>()((set) => ({
   select: (selection) => set({ selection }),
 }));
 
+/** Human-readable description of the selection in the current UI language (shown in the AI panel, not sent to the server). */
 export function describeSelection(s: Selection | null): string {
-  if (!s) return "Whole analysis (summary context)";
+  const lang = currentLang();
+  if (!s) return translate(lang, "selection.whole");
   switch (s.kind) {
-    case "map": return s.cells?.length ? `${s.mapName} · ${s.cells.length} cell(s)` : s.mapName;
-    case "point": return `Operating point ${s.rpm} rpm · ${s.pedalPct}% pedal · gear ${s.gear}`;
-    case "component": return `Component: ${s.label}`;
-    case "finding": return `Finding ${s.code}`;
-    case "candidate": return `Unknown map ${s.candidateId}`;
-    case "hex": return `Hex 0x${s.offset.toString(16).toUpperCase()} (+${s.length})`;
+    case "map": return s.cells?.length ? translate(lang, "selection.map", { name: s.mapName, n: s.cells.length }) : s.mapName;
+    case "point": return translate(lang, "selection.point", { rpm: s.rpm, pedal: s.pedalPct, gear: s.gear });
+    case "component": return translate(lang, "selection.component", { label: s.label });
+    case "finding": return translate(lang, "selection.finding", { code: s.code });
+    case "candidate": return translate(lang, "selection.candidate", { id: s.candidateId });
+    case "hex": return translate(lang, "selection.hex", { addr: `0x${s.offset.toString(16).toUpperCase()}`, len: s.length });
   }
 }

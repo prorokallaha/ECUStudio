@@ -24,7 +24,7 @@ export function SettingsPage() {
           <div className="space-y-2 p-3 text-xs">
             <div className="flex items-center justify-between"><span>{t("settings.language")}</span><Segmented value={lang} onChange={setLang} options={LANGS} /></div>
             <div className="flex items-center justify-between"><span>{t("settings.theme")}</span><Segmented value={ui.theme} onChange={ui.setTheme} options={[{ value: "dark", label: t("settings.dark") }, { value: "light", label: t("settings.light") }]} /></div>
-            <div className="flex items-center justify-between"><span>{t("settings.hexEndian")}</span><Segmented value={ui.hexEndian} onChange={(v) => ui.setHex({ hexEndian: v })} options={[{ value: "Big", label: "Big" }, { value: "Little", label: "Little" }]} /></div>
+            <div className="flex items-center justify-between"><span>{t("settings.hexEndian")}</span><Segmented value={ui.hexEndian} onChange={(v) => ui.setHex({ hexEndian: v })} options={[{ value: "Big", label: t("endian.Big") }, { value: "Little", label: t("endian.Little") }]} /></div>
           </div>
         </Card>
         <Card>

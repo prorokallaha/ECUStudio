@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { PAGE, readWord, useHexPages } from "./use-hex-pages";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 export type HexMode = "modified" | "stock" | "split";
 const ROW = 16;
@@ -28,6 +29,7 @@ export interface HexViewerProps {
 
 /** Virtualised hex/ASCII view. Only visible rows are rendered and only visible 4 KB pages are fetched. */
 export function HexViewer(p: HexViewerProps) {
+  const t = useT();
   const parent = useRef<HTMLDivElement>(null);
   const rows = Math.ceil(p.fileSize / ROW);
   const v = useVirtualizer({ count: rows, getScrollElement: () => parent.current, estimateSize: () => 20, overscan: 20 });
@@ -108,8 +110,8 @@ export function HexViewer(p: HexViewerProps) {
       }}
     >
       <div className="sticky top-0 z-10 flex gap-4 border-b border-border bg-bg-elev px-3 py-1 text-[11px] text-fg-subtle">
-        <span className="w-[8ch]">Offset</span>
-        {(p.mode === "split" ? ["Stock", "Modified"] : [p.mode === "stock" ? "Stock" : "Modified"]).map((h) => (
+        <span className="w-[8ch]">{t("binary.offset")}</span>
+        {(p.mode === "split" ? [t("common.stock"), t("common.modified")] : [p.mode === "stock" ? t("common.stock") : t("common.modified")]).map((h) => (
           <span key={h} className="flex-none">{h} {Array.from({ length: words }, (_, i) => (i * p.wordSize).toString(16).toUpperCase()).join(" ")}</span>
         ))}
         {p.mode !== "split" && <span>ASCII</span>}

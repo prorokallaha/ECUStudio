@@ -9,12 +9,14 @@ import { useMapData } from "@/hooks/use-analysis";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { hex } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 export function DiffPage() {
   return <WithReport>{(r) => <Diff r={r} />}</WithReport>;
 }
 
 function Diff({ r }: { r: AnalysisReport }) {
+  const t = useT();
   const { params, setParam, href } = useWorkspace();
   const diffs = useMemo(() => [...(r.modifiedMaps ?? [])].sort((a, b) => Math.abs(b.maxDeltaPct) - Math.abs(a.maxDeltaPct)), [r]);
   const mapId = params.get("map") ?? diffs[0]?.mapId ?? null;
@@ -22,16 +24,16 @@ function Diff({ r }: { r: AnalysisReport }) {
   const [sort, setSort] = useState<"delta" | "name">("delta");
   const list = sort === "delta" ? diffs : [...diffs].sort((a, b) => a.name.localeCompare(b.name));
 
-  if (!r.stockSha256) return <div><PageHeader title="Diff" /><EmptyState title="No stock file">Add the original (stock) binary to the project to compare maps cell by cell.</EmptyState></div>;
+  if (!r.stockSha256) return <div><PageHeader title={t("nav.diff")} /><EmptyState title={t("diff.noStock")}>{t("diff.noStockHint")}</EmptyState></div>;
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Diff" subtitle={`${r.stockName} → ${r.modifiedName} · ${r.changedBytes} bytes · ${diffs.length} maps · ${(r.unmappedChanges ?? []).length} unmapped regions`} />
+      <PageHeader title={t("nav.diff")} subtitle={t("diff.subtitle", { stock: r.stockName, mod: r.modifiedName, bytes: r.changedBytes, maps: diffs.length, unmapped: (r.unmappedChanges ?? []).length })} />
       <div className="flex min-h-0 flex-1">
         <div className="w-[420px] shrink-0 overflow-y-auto border-r border-border">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-panel-2 text-[10px] uppercase tracking-wide text-fg-subtle">
               <tr className="[&>th]:px-2 [&>th]:py-1.5 [&>th]:text-left [&>th]:font-medium">
-                <th className="cursor-pointer" onClick={() => setSort("name")}>Map</th><th>Cells</th><th className="cursor-pointer" onClick={() => setSort("delta")}>Mean Δ</th><th>Max Δ</th><th title="Mean mod/stock ratio">Ratio</th>
+                <th className="cursor-pointer" onClick={() => setSort("name")}>{t("diff.colMap")}</th><th>{t("diff.colCells")}</th><th className="cursor-pointer" onClick={() => setSort("delta")}>{t("diff.colMean")}</th><th>{t("diff.colMax")}</th><th title={t("diff.ratioTip")}>{t("diff.colRatio")}</th>
               </tr>
             </thead>
             <tbody>
@@ -40,18 +42,18 @@ function Diff({ r }: { r: AnalysisReport }) {
           </table>
           {(r.unmappedChanges ?? []).length > 0 && (
             <Card className="m-2">
-              <CardHeader title="Changes outside known maps" />
+              <CardHeader title={t("diff.outside")} />
               {(r.unmappedChanges ?? []).map((u) => (
                 <Link key={u.start} href={href("binary", { offset: u.start })} className="flex items-center gap-2 border-t border-border px-3 py-1.5 text-xs hover:bg-panel-2">
                   <span className="num text-warn">{hex(u.start)}</span><span className="text-fg-muted">{u.length} B</span>
-                  <Badge tone={u.section === "Code" ? "danger" : "warn"}>{u.section}</Badge>
-                  {u.nearestMapId && <span className="truncate text-[11px] text-fg-subtle">near {u.nearestMapId}</span>}
+                  <Badge tone={u.section === "Code" ? "danger" : "warn"}>{t.tx(`sectionKind.${u.section}`, u.section)}</Badge>
+                  {u.nearestMapId && <span className="truncate text-[11px] text-fg-subtle">{t("diff.near", { id: u.nearestMapId })}</span>}
                 </Link>
               ))}
             </Card>
           )}
           <Card className="m-2">
-            <CardHeader title="Rule findings" />
+            <CardHeader title={t("diff.ruleFindings")} />
             {r.calibrationFindings.map((f, i) => (
               <div key={i} className="flex items-start gap-2 border-t border-border px-3 py-1.5 text-xs">
                 <SeverityBadge severity={f.severity} /><span className="flex-1 text-fg-muted">{f.text}</span>
@@ -60,7 +62,7 @@ function Diff({ r }: { r: AnalysisReport }) {
           </Card>
         </div>
         <div className="min-w-0 flex-1">
-          {data.data ? <MapViewer r={r} data={data.data} initialView="compare" /> : <EmptyState title="Select a modified map" />}
+          {data.data ? <MapViewer r={r} data={data.data} initialView="compare" /> : <EmptyState title={t("diff.selectModified")} />}
         </div>
       </div>
     </div>
@@ -68,6 +70,7 @@ function Diff({ r }: { r: AnalysisReport }) {
 }
 
 function Row({ d, active, onClick }: { d: DiffSummary; active: boolean; onClick: () => void }) {
+  const t = useT();
   const tone = Math.abs(d.maxDeltaPct) > 40 ? "text-danger" : Math.abs(d.maxDeltaPct) > 15 ? "text-warn" : "text-attn";
   return (
     <tr onClick={onClick} className={cn("cursor-pointer border-t border-border hover:bg-panel-2 [&>td]:px-2 [&>td]:py-1.5", active && "bg-calc/12")}>
@@ -75,7 +78,7 @@ function Row({ d, active, onClick }: { d: DiffSummary; active: boolean; onClick:
       <td className="num text-fg-muted">{d.changedCells}/{d.totalCells}</td>
       <td className={cn("num", tone)}>{d.meanDeltaPct > 0 ? "+" : ""}{d.meanDeltaPct.toFixed(1)}%</td>
       <td className={cn("num", tone)}>{d.maxDeltaPct > 0 ? "+" : ""}{d.maxDeltaPct.toFixed(1)}%</td>
-      <td className="num text-fg-subtle" title="Mean modified/stock ratio over changed cells">{d.meanRatio ? d.meanRatio.toFixed(3) : "—"}</td>
+      <td className="num text-fg-subtle" title={t("diff.ratioCellTip")}>{d.meanRatio ? d.meanRatio.toFixed(3) : "—"}</td>
     </tr>
   );
 }

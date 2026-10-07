@@ -9,11 +9,13 @@ import { Map2D, Map3D, MapHeatmap } from "./map-charts";
 import { useSelection } from "@/stores/selection";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { hex } from "@/lib/format";
+import { useT } from "@/i18n";
 
 export type MapView = "table" | "2d" | "3d" | "heatmap" | "hex" | "compare";
 
 /** Synchronized views of one map: the selected cell is shared by table, 2D, heatmap and compare. */
 export function MapViewer({ r, data, initialView = "table" }: { r: AnalysisReport; data: MapData; initialView?: MapView }) {
+  const t = useT();
   const { href } = useWorkspace();
   const [view, setView] = useState<MapView>(initialView);
   const [sel, setSel] = useState<CellRef[]>([]);
@@ -53,20 +55,20 @@ export function MapViewer({ r, data, initialView = "table" }: { r: AnalysisRepor
           value={view}
           onChange={setView}
           items={[
-            { value: "table", label: "Table", icon: <Table2 className="size-3.5" /> },
+            { value: "table", label: t("maps.tabTable"), icon: <Table2 className="size-3.5" /> },
             { value: "2d", label: "2D", icon: <LineChart className="size-3.5" /> },
             { value: "3d", label: "3D", icon: <Box className="size-3.5" />, hidden: data.yAxis.length < 2 },
-            { value: "heatmap", label: "Heatmap", icon: <Grid3x3 className="size-3.5" /> },
-            { value: "hex", label: "Hex", icon: <Binary className="size-3.5" /> },
-            { value: "compare", label: "Compare", icon: <SplitSquareHorizontal className="size-3.5" />, hidden: !hasStock },
+            { value: "heatmap", label: t("maps.tabHeatmap"), icon: <Grid3x3 className="size-3.5" /> },
+            { value: "hex", label: t("maps.tabHex"), icon: <Binary className="size-3.5" /> },
+            { value: "compare", label: t("maps.tabCompare"), icon: <SplitSquareHorizontal className="size-3.5" />, hidden: !hasStock },
           ]}
           right={view === "compare" ? (
             <>
-              <Segmented size="xs" value={deltaKind} onChange={setDeltaKind} options={[{ value: "deltaPct", label: "Δ%" }, { value: "delta", label: "Δ abs" }]} />
-              <label className="flex items-center gap-1 whitespace-nowrap text-[11px] text-fg-muted"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />Only changed</label>
+              <Segmented size="xs" value={deltaKind} onChange={setDeltaKind} options={[{ value: "deltaPct", label: "Δ%" }, { value: "delta", label: t("maps.deltaAbs") }]} />
+              <label className="flex items-center gap-1 whitespace-nowrap text-[11px] text-fg-muted"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />{t("maps.onlyChanged")}</label>
             </>
           ) : cell ? (
-            <span className="num text-[11px] text-fg-muted">X {data.xAxis[cell.col]} · Y {data.yAxis[cell.row]} · <b className="text-fg">{data.values[cell.row * cols + cell.col]}</b> {s.unit}{hasStock && sameAxes ? ` (stock ${data.stockValues![cell.row * cols + cell.col]})` : ""}</span>
+            <span className="num text-[11px] text-fg-muted">X {data.xAxis[cell.col]} · Y {data.yAxis[cell.row]} · <b className="text-fg">{data.values[cell.row * cols + cell.col]}</b> {s.unit}{hasStock && sameAxes ? t("maps.cellStock", { v: data.stockValues![cell.row * cols + cell.col] }) : ""}</span>
           ) : null}
         />
         <div className="min-h-0 flex-1 overflow-auto p-3">
@@ -85,15 +87,15 @@ export function MapViewer({ r, data, initialView = "table" }: { r: AnalysisRepor
               <div className="@container"><div className="grid grid-cols-1 gap-3 @5xl:grid-cols-3">
                 {(["stock", "values", deltaKind] as const).map((k) => (
                   <div key={k} className="min-w-0 rounded-md border border-border">
-                    <div className="border-b border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">{k === "stock" ? "Stock" : k === "values" ? "Modified" : "Delta"}</div>
+                    <div className="border-b border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-fg-subtle">{k === "stock" ? t("common.stock") : k === "values" ? t("common.modified") : t("common.delta")}</div>
                     <MapGrid xAxis={data.xAxis} yAxis={data.yAxis} values={data.values} stock={data.stockValues} kind={k} selected={sel} onSelect={onSelect} onlyChanged={onlyChanged} dense decimals={k === "deltaPct" ? undefined : decimals} />
                   </div>
                 ))}
               </div></div>
             ) : (
               <div className="space-y-2">
-                <Badge tone="warn">Axes changed</Badge>
-                <div className="text-xs text-fg-muted">Breakpoints differ between stock and modified; cell-by-cell delta would compare different operating points. Showing both tables separately.</div>
+                <Badge tone="warn">{t("maps.axesChanged")}</Badge>
+                <div className="text-xs text-fg-muted">{t("maps.axesChangedHint")}</div>
                 <MapGrid xAxis={data.stockXAxis ?? []} yAxis={data.stockYAxis ?? []} values={data.stockValues ?? []} kind="values" selected={[]} onSelect={() => {}} dense />
                 <MapGrid xAxis={data.xAxis} yAxis={data.yAxis} values={data.values} kind="values" selected={sel} onSelect={onSelect} dense />
               </div>
@@ -105,32 +107,32 @@ export function MapViewer({ r, data, initialView = "table" }: { r: AnalysisRepor
       <aside className="w-72 shrink-0 space-y-3 overflow-y-auto border-l border-border bg-bg-elev p-3 text-xs">
         <div>
           <div className="text-sm font-semibold">{s.name}</div>
-          <div className="mt-1 flex flex-wrap gap-1"><SourceBadge source={s.source} /><ConfidenceBadge score={s.confidence} />{s.modified ? <Badge tone="calc">modified</Badge> : <Badge tone="ok">stock</Badge>}</div>
+          <div className="mt-1 flex flex-wrap gap-1"><SourceBadge source={s.source} /><ConfidenceBadge score={s.confidence} />{s.modified ? <Badge tone="calc">{t("maps.badgeModified")}</Badge> : <Badge tone="ok">{t("maps.badgeStock")}</Badge>}</div>
         </div>
         <div className="divide-y divide-border">
-          <KV k="Address"><Link className="num text-calc hover:underline" href={href("binary", { offset: s.address })}>{hex(s.address)}</Link></KV>
-          <KV k="Size">{s.rows} × {s.cols}</KV>
-          <KV k="Data type">{s.dataType} {s.endian === "Big" ? "BE" : "LE"}</KV>
-          <KV k="Factor / offset"><span className="num">{s.factor} / {s.offset}</span></KV>
-          <KV k="Unit">{s.unit}</KV>
-          <KV k="X axis">{s.xAxis}</KV>
-          <KV k="Y axis">{s.yAxis}</KV>
-          <KV k="Range"><span className="num">{s.min} … {s.max}</span></KV>
-          <KV k="Dependencies"><Link className="text-calc hover:underline" href={href("dependencies", { focus: [...nodeIds][0] })}>{deps} links</Link></KV>
-          {diff && <KV k="Changed cells"><span className="num">{diff.changedCells}/{diff.totalCells} · mean {diff.meanDeltaPct.toFixed(1)}%</span></KV>}
+          <KV k={t("maps.address")}><Link className="num text-calc hover:underline" href={href("binary", { offset: s.address })}>{hex(s.address)}</Link></KV>
+          <KV k={t("maps.size")}>{s.rows} × {s.cols}</KV>
+          <KV k={t("maps.dataType")}>{s.dataType} {s.endian === "Big" ? "BE" : "LE"}</KV>
+          <KV k={t("maps.factorOffset")}><span className="num">{s.factor} / {s.offset}</span></KV>
+          <KV k={t("maps.unit")}>{s.unit}</KV>
+          <KV k={t("maps.xAxis")}>{s.xAxis}</KV>
+          <KV k={t("maps.yAxis")}>{s.yAxis}</KV>
+          <KV k={t("maps.range")}><span className="num">{s.min} … {s.max}</span></KV>
+          <KV k={t("maps.dependencies")}><Link className="text-calc hover:underline" href={href("dependencies", { focus: [...nodeIds][0] })}>{t("maps.links", { n: deps })}</Link></KV>
+          {diff && <KV k={t("maps.changedCells")}><span className="num">{t("maps.changedValue", { c: diff.changedCells, t: diff.totalCells, m: diff.meanDeltaPct.toFixed(1) })}</span></KV>}
         </div>
         <div>
-          <SectionTitle className="mb-1">Why does this map matter?</SectionTitle>
+          <SectionTitle className="mb-1">{t("maps.why")}</SectionTitle>
           <p className="leading-relaxed text-fg-muted">{s.whyItMatters}</p>
         </div>
         {explanation && (
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5"><SectionTitle>Explain</SectionTitle><SeverityBadge severity={explanation.severity} /></div>
-            <Ex k="What changed" v={explanation.whatChanged} />
-            <Ex k="Physical effect" v={explanation.physicalEffect} />
-            <Ex k="Assessment" v={explanation.assessment} />
-            {explanation.linkedTo.length > 0 && <Ex k="Linked to" v={explanation.linkedTo.join(", ")} />}
-            {explanation.dataToIncreaseConfidence.length > 0 && <Ex k="To raise confidence" v={explanation.dataToIncreaseConfidence.join("; ")} />}
+            <div className="flex items-center gap-1.5"><SectionTitle>{t("maps.explain")}</SectionTitle><SeverityBadge severity={explanation.severity} /></div>
+            <Ex k={t("maps.whatChanged")} v={explanation.whatChanged} />
+            <Ex k={t("maps.physicalEffect")} v={explanation.physicalEffect} />
+            <Ex k={t("maps.assessment")} v={explanation.assessment} />
+            {explanation.linkedTo.length > 0 && <Ex k={t("maps.linkedTo")} v={explanation.linkedTo.join(", ")} />}
+            {explanation.dataToIncreaseConfidence.length > 0 && <Ex k={t("maps.toRaise")} v={explanation.dataToIncreaseConfidence.join("; ")} />}
           </div>
         )}
       </aside>
@@ -143,12 +145,13 @@ function Ex({ k, v }: { k: string; v: string }) {
 }
 
 function RawView({ data }: { data: MapData }) {
+  const t = useT();
   const s = data.summary;
   const size = s.dataType.includes("32") ? 4 : s.dataType.includes("8") ? 1 : 2;
   const cols = data.xAxis.length;
   return (
     <div className="space-y-2">
-      <div className="text-[11px] text-fg-muted">Raw = (value − offset) / factor, {s.dataType} {s.endian}-endian, starting at {hex(s.address)}.</div>
+      <div className="text-[11px] text-fg-muted">{t("maps.raw", { type: s.dataType, endian: s.endian, addr: hex(s.address) })}</div>
       <div className="overflow-auto font-mono text-[11px]">
         {data.yAxis.map((_, r) => (
           <div key={r} className="flex gap-3 whitespace-pre">

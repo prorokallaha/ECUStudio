@@ -10,12 +10,14 @@ import { CandidatePanel } from "@/components/calibration/candidate-panel";
 import { useMapData } from "@/hooks/use-analysis";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useSelection } from "@/stores/selection";
+import { useT } from "@/i18n";
 
 export function MapsPage() {
   return <WithReport>{(r) => <Maps r={r} />}</WithReport>;
 }
 
 function Maps({ r, defaultView }: { r: AnalysisReport; defaultView?: MapView }) {
+  const t = useT();
   const { params, setParam } = useWorkspace();
   const select = useSelection((s) => s.select);
   const mapId = params.get("map") ?? (params.get("candidate") ? null : r.maps.find((m) => m.modified)?.id ?? r.maps[0]?.id ?? null);
@@ -36,7 +38,7 @@ function Maps({ r, defaultView }: { r: AnalysisReport; defaultView?: MapView }) 
         {candidate ? <div className="h-full overflow-auto"><CandidatePanel r={r} c={candidate} /></div>
           : data.isLoading ? <div className="p-4"><Skeleton className="h-80" /></div>
           : data.data ? <MapViewer r={r} data={data.data} initialView={view} />
-          : <EmptyState icon={<MapIcon className="size-8" />} title="Select a map">Pick a map or an unknown candidate on the left. Ctrl+P searches by name or address.</EmptyState>}
+          : <EmptyState icon={<MapIcon className="size-8" />} title={t("maps.selectMap")}>{t("maps.selectHint")}</EmptyState>}
       </Panel>
     </PanelGroup>
   );

@@ -13,8 +13,10 @@ import { useHotkeys } from "@/hooks/use-hotkeys";
 import { useUI } from "@/stores/ui";
 import { useHistory } from "@/stores/history";
 import { useJobs } from "@/stores/jobs";
+import { useT } from "@/i18n";
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const { projectId, router } = useWorkspace();
   const project = useProject(projectId);
   const report = useReport();
@@ -28,8 +30,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const done = Object.values(jobs).filter((j) => j.status === "Completed");
     if (!done.length) return;
-    const t = setTimeout(() => done.forEach((j) => dismiss(j.jobId)), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => done.forEach((j) => dismiss(j.jobId)), 2500);
+    return () => clearTimeout(timer);
   }, [jobs, dismiss]);
 
   useEffect(() => { if (!projectId) router.replace("/"); }, [projectId, router]);
@@ -37,10 +39,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   useHotkeys({
     "mod+k": () => setPalette({ open: true, mode: "all" }),
     "mod+p": () => setPalette({ open: true, mode: "maps" }),
-    "mod+s": () => toast.success("All changes are saved"),
-    "mod+z": async () => { const l = await history.undo(); if (l) toast(`Undone: ${l}`); },
-    "mod+shift+z": async () => { const l = await history.redo(); if (l) toast(`Redone: ${l}`); },
-    "mod+y": async () => { const l = await history.redo(); if (l) toast(`Redone: ${l}`); },
+    "mod+s": () => toast.success(t("layout.allSaved")),
+    "mod+z": async () => { const l = await history.undo(); if (l) toast(t("layout.undone", { label: l })); },
+    "mod+shift+z": async () => { const l = await history.redo(); if (l) toast(t("layout.redone", { label: l })); },
+    "mod+y": async () => { const l = await history.redo(); if (l) toast(t("layout.redone", { label: l })); },
   });
 
   return (
