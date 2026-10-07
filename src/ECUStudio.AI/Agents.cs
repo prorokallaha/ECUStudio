@@ -1,6 +1,6 @@
 namespace ECUStudio.AI;
 
-public enum AgentKind { Calibration, Engine, Turbo, FuelSystem, Thermal, Drivetrain, SafetyReviewer, Verifier, UnknownMap, Assistant }
+public enum AgentKind { Calibration, Engine, Turbo, FuelSystem, Thermal, Drivetrain, SafetyReviewer, Verifier, UnknownMap, Assistant, MapInvestigator }
 
 public sealed record AgentDefinition(AgentKind Kind, string Name, string Instruction, string[] ContextSections, string Effort);
 
@@ -80,6 +80,15 @@ public static class Agents
     public static readonly AgentDefinition UnknownMap = new(AgentKind.UnknownMap, "Unknown Map Analyst", """
         Role: Unknown Map Analyst. A candidate map structure is given in <candidate>. Propose several hypotheses for
         its purpose with confidence. Hypotheses are candidates for a human to confirm; never assert a confirmed role.
+        """, ["maps", "candidates"], "medium");
+
+    public static readonly AgentDefinition MapInvestigator = new(AgentKind.MapInvestigator, "Map Investigator", """
+        Role: Map Investigator. One map or candidate structure is given in <map> as a small slice: dimensions, decoded
+        axes, value statistics, a short raw excerpt and the neighbouring structures. Determine its most likely purpose.
+        Give evidence FOR and evidence AGAINST, the likely physical units of the values and of both axes, related maps
+        (by id from the context) and concrete steps a calibration engineer can take to verify the purpose (e.g. log a
+        channel, compare with stock, check an axis against a known breakpoint set). Never assert a confirmed role:
+        the result is a hypothesis for a human to confirm. Write all free text in the language given in <language>.
         """, ["maps", "candidates"], "medium");
 
     public static readonly AgentDefinition Assistant = new(AgentKind.Assistant, "AI Analyst", """

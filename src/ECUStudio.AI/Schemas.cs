@@ -78,6 +78,25 @@ public static class Schemas
         ["data_needed"] = StrArr(),
     });
 
+    public static JsonObject MapInvestigation(IEnumerable<string> roles) => Obj(new JsonObject
+    {
+        ["purpose"] = Enum(roles.ToArray()),
+        ["purpose_text"] = Str(),
+        ["confidence"] = Num(),
+        ["evidence"] = new JsonObject { ["type"] = "array", ["items"] = Evidence() },
+        ["counter_evidence"] = StrArr(),
+        ["value_unit"] = Str(),
+        ["x_axis"] = Str(),
+        ["y_axis"] = Str(),
+        ["related_maps"] = StrArr(),
+        ["verification_steps"] = StrArr(),
+        ["alternatives"] = new JsonObject
+        {
+            ["type"] = "array",
+            ["items"] = Obj(new JsonObject { ["purpose"] = Enum(roles.ToArray()), ["confidence"] = Num(), ["rationale"] = Str() }),
+        },
+    });
+
     public static JsonObject AssistantAnswer() => Obj(new JsonObject
     {
         ["answer"] = Str(),

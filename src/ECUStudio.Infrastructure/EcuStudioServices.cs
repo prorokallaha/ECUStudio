@@ -93,6 +93,9 @@ public static class EcuStudioServices
         services.AddSingleton<IDefinitionLibraryStore>(options.Storage.Equals("memory", StringComparison.OrdinalIgnoreCase) && options.LibraryPath is null
             ? new InMemoryLibraryStore()
             : new JsonFileLibraryStore(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath()));
+        services.AddSingleton<IMapKnowledgeStore>(options.Storage.Equals("memory", StringComparison.OrdinalIgnoreCase) && options.LibraryPath is null
+            ? new InMemoryMapKnowledgeStore()
+            : new JsonFileMapKnowledgeStore(options.LibraryPath ?? EcuStudioOptions.DefaultLibraryPath()));
         services.AddSingleton(new LibraryPolicy(options.LibraryAllowedRoots));
         services.AddSingleton<DefinitionLibrary>();
         services.AddSingleton<DefinitionService>();

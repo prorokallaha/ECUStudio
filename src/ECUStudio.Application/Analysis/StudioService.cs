@@ -44,7 +44,8 @@ public sealed partial class StudioService(
     JobTracker jobs,
     AIOrchestrator ai,
     IAIProvider aiProvider,
-    DefinitionService definitions)
+    DefinitionService definitions,
+    IMapKnowledgeStore knowledge)
 {
     private readonly ConcurrentDictionary<Guid, AnalysisSession> _sessions = new();
     private readonly ConcurrentDictionary<Guid, AIAnalysisResult> _aiResults = new();
@@ -241,6 +242,15 @@ public sealed partial class StudioService(
         var modImage = BinaryImage.FromBytes(modBytes, modFile.Name);
         var confirmed = decisions.Where(d => d.BinarySha256 == modImage.Sha256 && d.Decision == "confirm" && Enum.TryParse<MapRole>(d.Role, out _))
             .GroupBy(d => d.Address).Select(g => g.Last()).Select(d => new ConfirmedCandidate(d.Address, Enum.Parse<MapRole>(d.Role!))).ToList();
+        {
+            var (kplugin, _) = plugins.Detect(modImage);
+            var kident = kplugin.Identify(modImage);
+            var known = MapKnowledge.Applicable(knowledge.All(), kplugin.PluginId, kident.SoftwareNumber.IsKnown ? kident.SoftwareNumber.Text : null,
+                    kident.HardwareNumber.IsKnown ? kident.HardwareNumber.Text : null)
+                .Where(k => k.SourceSha256 != modImage.Sha256 && confirmed.All(c => c.Address != k.Address))
+                .Select(k => new ConfirmedCandidate(k.Address, k.Role, k.Structure, $"SW {k.SoftwareNumber}, {k.ConfirmedAt:yyyy-MM-dd}"));
+            confirmed = [.. confirmed, .. known];
+        }
 
         var projectDefinitionContent = project.Definition is { Origin: DefinitionOrigin.Upload } pd ? await store.GetFileContentAsync(pd.Id, ct) : null;
         var resolved = definitions.Resolve(project.Definition, _ => projectDefinitionContent, modImage);
@@ -473,6 +483,10 @@ public sealed partial class StudioService(
         if (decision == "confirm" && !Enum.TryParse<MapRole>(role, out var r)) throw new EcuStudioException("INVALID_ROLE", $"Unknown role '{role}'");
         if (s.Report.ProjectId is not { } pid) throw new EcuStudioException("NO_PROJECT", "Candidate decisions are stored per project");
         await store.SaveCandidateDecisionAsync(new CandidateDecision(pid, s.Report.ModifiedSha256, c.Address, decision, role, note, DateTimeOffset.UtcNow), ct);
+        var ident = s.Report.Ecu;
+        if (decision == "confirm" && ident.SoftwareNumber.IsKnown)
+            knowledge.Save(new MapConfirmation(s.Plugin.PluginId, ident.SoftwareNumber.Text!, ident.HardwareNumber.IsKnown ? ident.HardwareNumber.Text : null,
+                c.Address, MapKnowledge.Fingerprint(c), Enum.Parse<MapRole>(role!), note, s.Report.ModifiedSha256, DateTimeOffset.UtcNow));
     }
 
     // ---------------- AI ---------------------------------------------------------------
@@ -508,6 +522,52 @@ public sealed partial class StudioService(
         var selectionJson = selection?.GetRawText() ?? "{}";
         if (selectionJson.Length > 20000) throw new EcuStudioException("INVALID_SELECTION", "Selection context too large; select fewer cells");
         return await ai.AskAsync(AIContextBuilder.Build(s), question, selectionJson, ct);
+    }
+
+    /// <summary>
+    /// AI investigation of one defined map or candidate. Only a small slice is sent: dimensions, decoded axes, value
+    /// statistics, ≤ 512 raw bytes and the neighbouring structures; never the whole binary.
+    /// </summary>
+    public async Task<MapInvestigation> InvestigateMapAsync(Guid analysisId, string? mapId, string? candidateId, string? language, CancellationToken ct = default)
+    {
+        if (!aiProvider.IsConfigured) throw new AIUnavailableException("No AI provider configured. Set ANTHROPIC_API_KEY.");
+        var s = await GetSessionAsync(analysisId, ct);
+        var lang = language is "en" ? "English" : "Russian";
+        int address, length;
+        object slice;
+        string target;
+        if (mapId is not null)
+        {
+            var m = s.ModCalibration.Get(mapId) ?? throw new NotFoundException($"Map '{mapId}' not found");
+            var d = m.Definition;
+            address = d.Address; length = Math.Min(512, d.ByteLength); target = mapId;
+            slice = new
+            {
+                id = d.Id, name = d.Name, current_role = d.Role.ToString(), source = d.Source.ToString(), confidence = d.Confidence,
+                address = $"0x{d.Address:X6}", rows = d.Rows, cols = d.Cols, data_type = d.DataType.ToString(), factor = d.Factor, unit = d.Unit,
+                x_axis = new { name = d.XAxis?.Name, unit = d.XAxis?.Unit, values = m.XAxis }, y_axis = new { name = d.YAxis?.Name, unit = d.YAxis?.Unit, values = m.YAxis },
+                values = new { min = m.Values.Min(), max = m.Values.Max(), mean = m.Values.Average(), first_row = m.Values.Take(d.Cols), last_row = m.Values.Skip((d.Rows - 1) * d.Cols) },
+                stock_differs = s.StockCalibration?.Get(mapId) is { } st && !st.Values.SequenceEqual(m.Values),
+            };
+        }
+        else
+        {
+            var c = s.Report.Candidates.FirstOrDefault(x => x.Id == candidateId) ?? throw new NotFoundException($"Candidate {candidateId} not found");
+            address = c.HeaderAddress; length = Math.Min(512, 4 + 2 * (c.Rows + c.Cols + c.Rows * c.Cols)); target = c.Id;
+            slice = new
+            {
+                id = c.Id, label = c.DisplayName, address = $"0x{c.Address:X6}", rows = c.Rows, cols = c.Cols, raw_min = c.RawMin, raw_max = c.RawMax,
+                x_axis_raw = c.XAxisRaw, y_axis_raw = c.YAxisRaw, x_axis_guesses = c.XAxisGuesses, y_axis_guesses = c.YAxisGuesses, signature_hypotheses = c.Hypotheses,
+            };
+        }
+        var raw = Convert.ToHexString(s.Request.Modified.Slice(address, length));
+        var neighbours = s.ModCalibration.Maps.Where(m => Math.Abs(m.Definition.Address - address) < 4096 && m.Id != mapId)
+            .Select(m => new { m.Id, name = m.Definition.Name, role = m.Definition.Role.ToString(), address = $"0x{m.Definition.Address:X6}" })
+            .Concat(s.Report.Candidates.Where(c => Math.Abs(c.Address - address) < 4096 && c.Id != candidateId)
+                .Select(c => new { c.Id, name = c.DisplayName, role = "candidate", address = $"0x{c.Address:X6}" }))
+            .Take(12).ToList();
+        var json = JsonSerializer.Serialize(new { target = slice, raw_hex_excerpt = raw, neighbours, ecu = s.Report.Ecu.EcuFamily, software = s.Report.Ecu.SoftwareNumber.Text }, Json.Options);
+        return await ai.InvestigateAsync(AIContextBuilder.Build(s), target, json, lang, length, Enum.GetNames<MapRole>(), ct);
     }
 
     public async Task<List<MapHypothesisResult>> CandidateHypothesesAsync(Guid analysisId, string candidateId, CancellationToken ct = default)

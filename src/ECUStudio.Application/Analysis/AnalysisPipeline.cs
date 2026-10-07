@@ -32,7 +32,9 @@ public sealed record AnalysisRequest
     public GridOptions? Grid { get; init; }
 }
 
-public sealed record ConfirmedCandidate(int Address, MapRole Role);
+/// <param name="Structure">When set (knowledge carried over from another file with the same SW/HW), the candidate at
+/// <paramref name="Address"/> must have this exact structure fingerprint or the confirmation is not applied.</param>
+public sealed record ConfirmedCandidate(int Address, MapRole Role, string? Structure = null, string? Origin = null);
 
 /// <param name="AgainstStock">True when the log was recorded while the stock calibration was flashed.</param>
 public sealed record LogInput(string Id, DiagnosticLog Log, bool AgainstStock);
@@ -88,10 +90,17 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         var resolution = plugin.ResolveDefinitions(req.Modified, ident, req.Definition);
         var definitions = resolution.Definitions.ToList();
         var candidates = resolution.Candidates.ToList();
+        var knowledgeNotes = new List<string>();
         foreach (var confirmed in req.ConfirmedCandidates)
         {
             var idx = candidates.FindIndex(c => c.Address == confirmed.Address);
             if (idx < 0) continue;
+            if (confirmed.Structure is { } fp && MapKnowledge.Fingerprint(candidates[idx]) != fp)
+            {
+                knowledgeNotes.Add($"Confirmation of {confirmed.Role} at 0x{confirmed.Address:X} ({confirmed.Origin}) not applied: the structure there differs");
+                continue;
+            }
+            if (confirmed.Origin is { } origin) knowledgeNotes.Add($"{confirmed.Role} at 0x{confirmed.Address:X} confirmed earlier ({origin}); same SW/HW and identical structure");
             var c = candidates[idx] with { Status = CandidateStatus.Confirmed, ConfirmedRole = confirmed.Role };
             candidates[idx] = c;
             definitions.RemoveAll(d => d.Role == confirmed.Role && d.Source == SourceType.SignatureScan);
@@ -191,7 +200,7 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
             Vehicle = vehicle,
             DataAvailability = availability,
             DefinitionSource = resolution.Source,
-            DefinitionNotes = [.. req.DefinitionNotes, .. resolution.Notes, .. modBuild.Errors],
+            DefinitionNotes = [.. req.DefinitionNotes, .. resolution.Notes, .. knowledgeNotes, .. modBuild.Errors],
             DefinitionBinding = req.DefinitionBinding,
             Maps = modBuild.Set.Maps.Select(m => Summary(m, diff, graph)).OrderBy(m => m.Category).ThenBy(m => m.Name).ToList(),
             Candidates = candidates,

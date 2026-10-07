@@ -40,6 +40,28 @@ public sealed record AIAnalysisResult
 public sealed record AssistantAnswer(string Answer, double Confidence, IReadOnlyList<Evidence> Evidence, IReadOnlyList<string> Assumptions,
     IReadOnlyList<string> Unknowns, IReadOnlyList<string> SuggestedChecks, bool FromCache, int RejectedEvidence);
 
+public sealed record MapAlternative(string Purpose, double Confidence, string Rationale);
+
+/// <summary>AI investigation of one map. A hypothesis for a human to confirm, never a confirmed role.</summary>
+public sealed record MapInvestigation
+{
+    public required string Target { get; init; }
+    public required string Purpose { get; init; }
+    public string PurposeText { get; init; } = "";
+    public double Confidence { get; init; }
+    public IReadOnlyList<Evidence> Evidence { get; init; } = [];
+    public IReadOnlyList<string> CounterEvidence { get; init; } = [];
+    public string ValueUnit { get; init; } = "";
+    public string XAxis { get; init; } = "";
+    public string YAxis { get; init; } = "";
+    public IReadOnlyList<string> RelatedMaps { get; init; } = [];
+    public IReadOnlyList<string> VerificationSteps { get; init; } = [];
+    public IReadOnlyList<MapAlternative> Alternatives { get; init; } = [];
+    public bool FromCache { get; init; }
+    /// <summary>Bytes of the binary included in the request (the whole BIN is never sent).</summary>
+    public int BytesSent { get; init; }
+}
+
 public sealed record MapHypothesisResult(string Role, double Confidence, string Rationale, IReadOnlyList<Evidence> Evidence);
 
 /// <summary>
@@ -159,6 +181,37 @@ public sealed class AIOrchestrator(IAIProvider provider, IAICacheStore cache, st
         if (evidence.Count == 0) conf = Math.Min(conf, 0.2);
         return new AssistantAnswer(AIResponseValidator.Str(j, "answer") ?? "", Math.Round(conf, 2), evidence,
             AIResponseValidator.StrArr(j, "assumptions"), AIResponseValidator.StrArr(j, "unknowns"), AIResponseValidator.StrArr(j, "suggested_checks"), run.FromCache, invalid.Count);
+    }
+
+    public async Task<MapInvestigation> InvestigateAsync(AIContext context, string target, string mapJson, string language, int bytesSent, IEnumerable<string> roles, CancellationToken ct = default)
+    {
+        var instruction = Agents.MapInvestigator.Instruction + $"\n<language>{language}</language>\n<map>{mapJson}</map>";
+        var (json, run) = await CallAsync(Agents.MapInvestigator, context, instruction, Schemas.MapInvestigation(roles), ct, throwOnError: true);
+        var j = json!.Value;
+        var evidence = AIResponseValidator.ParseEvidence(j, context.AllowedRefs, out _);
+        var c = Math.Clamp(AIResponseValidator.Num(j, "confidence") ?? 0, 0, 1);
+        var alternatives = new List<MapAlternative>();
+        if (j.TryGetProperty("alternatives", out var alts) && alts.ValueKind == JsonValueKind.Array)
+            foreach (var a in alts.EnumerateArray())
+                alternatives.Add(new MapAlternative(AIResponseValidator.Str(a, "purpose") ?? "Unknown", Math.Round(Math.Min(0.8, Math.Clamp(AIResponseValidator.Num(a, "confidence") ?? 0, 0, 1)), 2), AIResponseValidator.Str(a, "rationale") ?? ""));
+        return new MapInvestigation
+        {
+            Target = target,
+            Purpose = AIResponseValidator.Str(j, "purpose") ?? "Unknown",
+            PurposeText = AIResponseValidator.Str(j, "purpose_text") ?? "",
+            // Capped: AI output needs human confirmation; without valid evidence it stays weak.
+            Confidence = Math.Round(Math.Min(c, evidence.Count == 0 ? 0.3 : 0.8), 2),
+            Evidence = evidence,
+            CounterEvidence = AIResponseValidator.StrArr(j, "counter_evidence"),
+            ValueUnit = AIResponseValidator.Str(j, "value_unit") ?? "",
+            XAxis = AIResponseValidator.Str(j, "x_axis") ?? "",
+            YAxis = AIResponseValidator.Str(j, "y_axis") ?? "",
+            RelatedMaps = AIResponseValidator.StrArr(j, "related_maps"),
+            VerificationSteps = AIResponseValidator.StrArr(j, "verification_steps"),
+            Alternatives = alternatives.OrderByDescending(a => a.Confidence).ToList(),
+            FromCache = run.FromCache,
+            BytesSent = bytesSent,
+        };
     }
 
     public async Task<List<MapHypothesisResult>> HypothesesAsync(AIContext context, string candidateJson, IEnumerable<string> roles, CancellationToken ct = default)

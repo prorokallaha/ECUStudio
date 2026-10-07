@@ -19,6 +19,7 @@ public sealed record HardwareBody(IReadOnlyList<HardwareOverride> Overrides);
 public sealed record StartAnalysisBody(Guid? ModifiedFileId, Guid? StockFileId);
 public sealed record JobStarted(Guid JobId);
 public sealed record WorkingHexDto(int Offset, int Length, int FileSize, string Working, string Original, IReadOnlyList<ByteRange> Changed);
+public sealed record InvestigateBody(string? MapId, string? CandidateId, string? Language);
 public sealed record AddLibraryRootBody(string Path, string? Name);
 public sealed record UpdateLibraryRootBody(string? Name, string? DownloadPath);
 public sealed record LibraryEntryBody(string EntryId, bool Force = false);
@@ -187,6 +188,11 @@ public static class StudioEndpoints
         a.MapPost("/ai", async (Guid analysisId, StudioService s, CancellationToken ct) => Results.Accepted(value: new JobStarted(await s.StartAIAnalysisAsync(analysisId, ct)))).WithTags("ai");
         a.MapGet("/ai", (Guid analysisId, StudioService s) => s.GetAIResult(analysisId) ?? throw new NotFoundException("No AI analysis for this analysis yet")).WithTags("ai");
         a.MapPost("/ai/ask", (Guid analysisId, AskBody b, StudioService s, CancellationToken ct) => s.AskAsync(analysisId, b.Question, b.Selection, ct)).WithTags("ai");
+        a.MapPost("/ai/investigate", (Guid analysisId, InvestigateBody b, StudioService s, CancellationToken ct) =>
+        {
+            if ((b.MapId is null) == (b.CandidateId is null)) throw new EcuStudioException("INVALID_TARGET", "Give exactly one of mapId or candidateId");
+            return s.InvestigateMapAsync(analysisId, b.MapId, b.CandidateId, b.Language, ct);
+        }).WithTags("ai");
         a.MapPost("/candidates/{candidateId}/hypotheses", (Guid analysisId, string candidateId, StudioService s, CancellationToken ct) => s.CandidateHypothesesAsync(analysisId, candidateId, ct)).WithTags("ai");
         return api;
     }
