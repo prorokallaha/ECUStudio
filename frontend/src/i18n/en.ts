@@ -85,7 +85,7 @@ export const en: Dictionary = {
   valueKind: { Estimated: "Estimated", EcuRequested: "EcuRequested", Measured: "Measured", Spec: "Spec", Assumed: "Assumed", Unknown: "Unknown", NotApplicable: "NotApplicable" },
   endian: { Big: "Big", Little: "Little" },
   sectionKind: { Boot: "Boot", Code: "Code", Calibration: "Calibration", Data: "Data", Empty: "Empty", Unknown: "Unknown" },
-  checksum: { Valid: "Valid", Invalid: "Invalid", NotImplemented: "NotImplemented", Unknown: "Unknown" },
+  checksum: { Valid: "Valid", Invalid: "Invalid", Corrected: "Corrected", Unknown: "Unknown", Unsupported: "Unsupported" },
   candidateStatus: { Candidate: "Candidate", Confirmed: "Confirmed", Rejected: "Rejected" },
   nodeState: { Stock: "Stock", Modified: "Modified", Warning: "Warning", Danger: "Danger", Unknown: "Unknown", NotApplicable: "N/A" },
   limiter: {

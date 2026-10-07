@@ -45,14 +45,14 @@ public sealed record ChecksumSpec
 /// <summary>
 /// Verifies checksum blocks that a definition describes. Only described blocks are checked: an image can carry
 /// further checksums the definition does not know about, so "all described blocks valid" is reported as such and
-/// never as "ready to flash". ECUStudio does not correct checksums.
+/// never as "ready to flash". Correction (<see cref="Correct"/>) is only done for described blocks.
 /// </summary>
 public static class ChecksumVerifier
 {
     public static ChecksumReport Verify(ReadOnlySpan<byte> image, IReadOnlyList<ChecksumSpec> specs, string scope)
     {
         if (specs.Count == 0)
-            return new ChecksumReport(ChecksumStatus.NotImplemented, [], $"No checksum blocks are described for this image ({scope}).");
+            return new ChecksumReport(ChecksumStatus.Unsupported, [], $"No checksum blocks are described for this image ({scope}).");
 
         var blocks = new List<ChecksumBlock>(specs.Count);
         foreach (var s in specs)
@@ -80,6 +80,56 @@ public static class ChecksumVerifier
             _ => $"All {blocks.Count} described checksum block(s) match ({scope}). Blocks not described in the definition are not checked: this is not a flash-readiness check.",
         };
         return new ChecksumReport(overall, blocks, note);
+    }
+
+    /// <summary>
+    /// Recalculates the described blocks in place. Blocks are corrected repeatedly until stable, so a stored value that
+    /// lies inside another block's range is accounted for. Blocks with an inconsistent definition are left untouched
+    /// and reported as Unknown. The returned report shows Corrected for blocks whose stored value changed.
+    /// </summary>
+    public static ChecksumReport Correct(Span<byte> image, IReadOnlyList<ChecksumSpec> specs, string scope)
+    {
+        if (specs.Count == 0)
+            return new ChecksumReport(ChecksumStatus.Unsupported, [], $"No checksum blocks are described for this image ({scope}): nothing was corrected.");
+        var before = Verify(image, specs, scope);
+        var length = image.Length;
+        var usable = specs.Where(s => Validate(s, length) is null).ToList();
+        for (var pass = 0; pass <= usable.Count; pass++)
+        {
+            var changed = false;
+            foreach (var s in usable)
+            {
+                var computed = Compute(image, s);
+                var expected = s.Complement ? ~computed & Mask(s.EffectiveStoreSize) : computed;
+                if (ReadStored(image, s) == expected) continue;
+                WriteStored(image, s, expected);
+                changed = true;
+            }
+            if (!changed) break;
+        }
+        var after = Verify(image, specs, scope);
+        var blocks = after.Blocks.Select((b, i) => b.Status == ChecksumStatus.Valid && before.Blocks[i].Status == ChecksumStatus.Invalid ? b with { Status = ChecksumStatus.Corrected } : b).ToList();
+        var corrected = blocks.Count(b => b.Status == ChecksumStatus.Corrected);
+        var overall = after.Overall != ChecksumStatus.Valid ? after.Overall : corrected > 0 ? ChecksumStatus.Corrected : ChecksumStatus.Valid;
+        var note = overall switch
+        {
+            ChecksumStatus.Corrected => $"{corrected} of {blocks.Count} described checksum block(s) recalculated ({scope}). Blocks not described in the definition are not checked.",
+            ChecksumStatus.Valid => $"All {blocks.Count} described checksum block(s) already match ({scope}). Blocks not described in the definition are not checked.",
+            _ => after.Note,
+        };
+        return new ChecksumReport(overall, blocks, note);
+    }
+
+    private static void WriteStored(Span<byte> image, ChecksumSpec s, uint value)
+    {
+        var v = image.Slice(s.StoredAt, s.EffectiveStoreSize);
+        var big = s.Endian == Endianness.Big;
+        switch (s.EffectiveStoreSize)
+        {
+            case 1: v[0] = (byte)value; break;
+            case 2: if (big) BinaryPrimitives.WriteUInt16BigEndian(v, (ushort)value); else BinaryPrimitives.WriteUInt16LittleEndian(v, (ushort)value); break;
+            default: if (big) BinaryPrimitives.WriteUInt32BigEndian(v, value); else BinaryPrimitives.WriteUInt32LittleEndian(v, value); break;
+        }
     }
 
     public static uint Compute(ReadOnlySpan<byte> image, ChecksumSpec s)

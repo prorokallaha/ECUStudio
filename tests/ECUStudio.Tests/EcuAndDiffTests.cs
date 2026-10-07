@@ -36,7 +36,7 @@ public class PluginDetectionTests
     {
         var img = Fixtures.Image(Fixtures.Stock, "stock.bin");
         var report = Fixtures.Plugin().VerifyChecksums(img, []);
-        Assert.Equal(ChecksumStatus.NotImplemented, report.Overall);
+        Assert.Equal(ChecksumStatus.Unsupported, report.Overall);
         Assert.Empty(report.Blocks);
     }
 

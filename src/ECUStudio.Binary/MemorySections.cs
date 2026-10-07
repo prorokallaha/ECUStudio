@@ -12,7 +12,12 @@ public sealed record MemorySection(string Name, int Start, int End, SectionKind 
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ChecksumStatus>))]
-public enum ChecksumStatus { Valid, Invalid, NotImplemented, Unknown }
+/// <summary>
+/// Valid: described blocks match. Invalid: a described block does not match. Corrected: ECUStudio recalculated the
+/// described blocks with an algorithm the plugin implements. Unknown: blocks could not be checked (inconsistent
+/// definition). Unsupported: no checksum algorithm/blocks are known for this file: it is never reported as safe to write.
+/// </summary>
+public enum ChecksumStatus { Valid, Invalid, Corrected, Unknown, Unsupported }
 
 public sealed record ChecksumBlock(string Name, int Start, int End, string Algorithm, ChecksumStatus Status, string? Stored = null, string? Computed = null);
 

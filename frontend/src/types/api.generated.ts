@@ -642,6 +642,857 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/definition/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DefinitionPreview"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    } & {
+                        force?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Project"];
+                    };
+                };
+            };
+        };
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Project"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/definition/library/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LibraryEntryBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DefinitionPreview"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/definition/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LibraryEntryBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Project"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/hex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    offset?: number;
+                    length?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkingHexDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HexEdit"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/map/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MapEditRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MapEditPreview"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MapEditRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/redo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RevertRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EditState"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/save-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": null | components["schemas"]["SaveRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SaveCheck"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/files/{fileId}/edits/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    fileId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SaveRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SaveResult"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/roots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LibraryRootStatus"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddLibraryRootBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/torrents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file: components["schemas"]["IFormFile"];
+                    } & {
+                        downloadPath?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/roots/{rootId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    rootId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    rootId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateLibraryRootBody"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LibraryRoot"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/library/roots/{rootId}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    rootId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/library/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    format?: components["schemas"]["LibraryFormat"];
+                    definitionsOnly?: boolean;
+                    offset?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LibrarySearchResult"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{id}": {
         parameters: {
             query?: never;
@@ -1030,6 +1881,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analyses/{analysisId}/definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    analysisId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DefinitionMatch"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analyses/{analysisId}/ai": {
         parameters: {
             query?: never;
@@ -1193,6 +2081,10 @@ export interface components {
             /** Format: int64 */
             cacheWriteTokens: number;
         };
+        AddLibraryRootBody: {
+            path: string;
+            name: null | string;
+        };
         AgentRun: {
             agent: string;
             fromCache: boolean;
@@ -1222,6 +2114,7 @@ export interface components {
             dataAvailability: components["schemas"]["DataAvailability"];
             definitionSource: string;
             definitionNotes: string[];
+            definitionBinding?: null | components["schemas"]["DefinitionBinding"];
             maps: components["schemas"]["MapSummary"][];
             candidates: components["schemas"]["MapCandidate"][];
             modifiedMaps: components["schemas"]["DiffSummary"][];
@@ -1265,6 +2158,16 @@ export interface components {
         };
         /** @enum {unknown} */
         AxisQuantity: "Unknown" | "EngineSpeed" | "PedalPosition" | "InjectionQuantity" | "AtmosphericPressure" | "AirMass" | "Torque" | "Gear" | "Temperature" | "BoostPressure" | "Index";
+        BytePatch: {
+            /** Format: int32 */
+            address: number;
+            /** Format: byte */
+            old: string;
+            /** Format: byte */
+            new: string;
+            /** Format: int32 */
+            length: number;
+        };
         ByteRange: {
             /** Format: int32 */
             start: number;
@@ -1273,8 +2176,45 @@ export interface components {
             /** Format: int32 */
             end: number;
         };
+        ByteWrite: {
+            /** Format: int32 */
+            address: number;
+            /** Format: byte */
+            bytes: string;
+        };
         /** @enum {unknown} */
         CandidateStatus: "Candidate" | "Confirmed" | "Rejected";
+        Cell: {
+            /** Format: int32 */
+            row: number;
+            /** Format: int32 */
+            col: number;
+        };
+        CellChange: {
+            /** Format: int32 */
+            row: number;
+            /** Format: int32 */
+            col: number;
+            /** Format: double */
+            old: number;
+            /** Format: double */
+            requested: number;
+            /** Format: double */
+            stored: number;
+            /** Format: int32 */
+            address: number;
+            oldBytes: string;
+            newBytes: string;
+            clamped: boolean;
+        };
+        ChangedRegion: {
+            /** Format: int32 */
+            start: number;
+            /** Format: int32 */
+            length: number;
+            mapId: null | string;
+            mapName: null | string;
+        };
         ChannelValidation: {
             channel: components["schemas"]["LogChannel"];
             label: string;
@@ -1306,7 +2246,22 @@ export interface components {
             note: string;
         };
         /** @enum {unknown} */
-        ChecksumStatus: "Valid" | "Invalid" | "NotImplemented" | "Unknown";
+        ChecksumStatus: "Valid" | "Invalid" | "Corrected" | "Unknown" | "Unsupported";
+        CompatibilityReport: {
+            status: components["schemas"]["CompatibilityStatus"];
+            /** Format: int32 */
+            mapCount: number;
+            /** Format: int32 */
+            mapsDecoded: number;
+            /** Format: int32 */
+            mapsOutOfRange: number;
+            /** Format: int32 */
+            axesNotMonotonic: number;
+            softwareMatches?: null | boolean;
+            reasons: string[];
+        };
+        /** @enum {unknown} */
+        CompatibilityStatus: "Compatible" | "Warning" | "Incompatible";
         ComponentConsensus: {
             component: string;
             physicsSeverity: components["schemas"]["Severity"];
@@ -1404,6 +2359,42 @@ export interface components {
             decision: string;
             role: null | string;
             note: null | string;
+        };
+        DefinitionBinding: {
+            origin: components["schemas"]["DefinitionOrigin"];
+            name: string;
+            format: components["schemas"]["LibraryFormat"];
+            libraryEntryId?: null | string;
+            level?: null | components["schemas"]["MatchLevel"];
+            reasons: string[];
+            compatibility?: null | components["schemas"]["CompatibilityReport"];
+            applied: boolean;
+        };
+        DefinitionMatch: {
+            entry: components["schemas"]["LibraryEntry"];
+            level: components["schemas"]["MatchLevel"];
+            /** Format: double */
+            score: number;
+            reasons: string[];
+            isDefinition: boolean;
+            importable: boolean;
+        };
+        /** @enum {unknown} */
+        DefinitionOrigin: "Upload" | "Library" | "AutoLibrary";
+        DefinitionPreview: {
+            name: string;
+            format: components["schemas"]["LibraryFormat"];
+            importable: boolean;
+            /** Format: int32 */
+            mapCount: number;
+            identifiers: components["schemas"]["LibraryIdentifiers"];
+            notes: string[];
+            compatibility?: null | components["schemas"]["CompatibilityReport"];
+            binary?: null | string;
+            binarySoftware?: null | string;
+            binaryHardware?: null | string;
+            ecuFamily?: null | string;
+            error?: null | string;
         };
         DependencyEdge: {
             from: string;
@@ -1504,6 +2495,48 @@ export interface components {
             confidence: number;
             notes: string[];
         };
+        EditOperation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            at: string;
+            source: string;
+            mapId?: null | string;
+            description: string;
+            patches: components["schemas"]["BytePatch"][];
+            /** Format: int32 */
+            changedBytes: number;
+        };
+        EditState: {
+            /** Format: uuid */
+            fileId: string;
+            /** Format: int32 */
+            size: number;
+            originalSha256: string;
+            workingSha256: string;
+            /** Format: int32 */
+            changedBytes: number;
+            changedRanges: components["schemas"]["ByteRange"][];
+            history: components["schemas"]["EditSummary"][];
+            /** Format: int32 */
+            redoCount: number;
+            canUndo: boolean;
+            canRedo: boolean;
+            regions: components["schemas"]["ChangedRegion"][];
+        };
+        EditSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            at: string;
+            source: string;
+            mapId: null | string;
+            description: string;
+            /** Format: int32 */
+            changedBytes: number;
+            /** Format: int32 */
+            firstAddress: number;
+        };
         /** @enum {unknown} */
         Endianness: "Big" | "Little";
         EnvironmentConditions: {
@@ -1545,6 +2578,12 @@ export interface components {
             /** Format: double */
             confidence: number;
             provider: string;
+        };
+        FileEdits: {
+            /** Format: uuid */
+            fileId: string;
+            history: components["schemas"]["EditOperation"][];
+            redo: components["schemas"]["EditOperation"][];
         };
         /** @enum {unknown} */
         FileRole: "Stock" | "Modified" | "Version";
@@ -1588,6 +2627,12 @@ export interface components {
             sensors: components["schemas"]["ComponentSpec"];
             emissions: components["schemas"]["ComponentSpec"];
             all: null | components["schemas"]["ComponentSpec"][];
+        };
+        HexEdit: {
+            /** Format: int32 */
+            address: number;
+            hex: string;
+            description?: null | string;
         };
         HexPageDto: {
             /** Format: int32 */
@@ -1663,6 +2708,74 @@ export interface components {
             detail?: null | string;
             severity?: null | components["schemas"]["Severity"];
             link?: null | string;
+        };
+        LibraryEntry: {
+            id: string;
+            /** Format: uuid */
+            rootId: string;
+            relativePath: string;
+            format: components["schemas"]["LibraryFormat"];
+            /** Format: int64 */
+            size: number;
+            /** Format: date-time */
+            modified?: null | string;
+            available: boolean;
+            identifiers: components["schemas"]["LibraryIdentifiers"];
+            contentIdentified: boolean;
+            title?: null | string;
+            /** Format: int32 */
+            objectCount?: null | number;
+            sha256?: null | string;
+            error?: null | string;
+        };
+        LibraryEntryBody: {
+            entryId: string;
+            /** @default false */
+            force: boolean;
+        };
+        /** @enum {unknown} */
+        LibraryFormat: "A2L" | "Damos" | "Xdf" | "EcuDef" | "Binary" | "Hex" | "Ols" | "Kp" | "Csv" | "Xml" | "Archive" | "Other";
+        LibraryIdentifiers: {
+            softwareNumbers: string[];
+            hardwareNumbers: string[];
+            oemNumbers: string[];
+            ecuFamilies: string[];
+            engineHints: string[];
+            isEmpty: boolean;
+        };
+        LibraryRoot: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["LibraryRootKind"];
+            path: string;
+            downloadPath?: null | string;
+            name?: null | string;
+            /** Format: date-time */
+            addedAt: string;
+            /** Format: date-time */
+            lastScanAt?: null | string;
+            /** Format: int32 */
+            fileCount: number;
+            /** Format: int64 */
+            totalBytes: number;
+            lastError?: null | string;
+        };
+        /** @enum {unknown} */
+        LibraryRootKind: "Directory" | "Torrent";
+        LibraryRootStatus: {
+            root: components["schemas"]["LibraryRoot"];
+            state: components["schemas"]["ScanState"];
+            /** Format: int32 */
+            definitions: number;
+            /** Format: int32 */
+            binaries: number;
+            /** Format: int32 */
+            unavailable: number;
+        };
+        LibrarySearchResult: {
+            /** Format: int32 */
+            total: number;
+            entries: components["schemas"]["LibraryEntry"][];
         };
         /** @enum {unknown} */
         Limiter: "None" | "DriverWish" | "TorqueLimiter" | "GearLimiter" | "ConversionAxisEnd" | "SmokeLimiter" | "BoostTarget" | "BoostLimiter" | "Svbl" | "Spool";
@@ -1774,6 +2887,20 @@ export interface components {
             stockYAxis: null | (number)[];
             rawBytesAddress: null | number[];
         };
+        MapEditPreview: {
+            mapId: string;
+            changes: components["schemas"]["CellChange"][];
+            /** Format: int32 */
+            changedBytes: number;
+            /** Format: int32 */
+            clampedCells: number;
+            writes: components["schemas"]["ByteWrite"][];
+        };
+        MapEditRequest: {
+            mapId: string;
+            operation: components["schemas"]["MapOperation"];
+            description?: null | string;
+        };
         MapExplanation: {
             mapId: string;
             name: string;
@@ -1793,6 +2920,18 @@ export interface components {
             rationale: string;
             evidence: components["schemas"]["Evidence"][];
         };
+        MapOperation: {
+            kind: components["schemas"]["MapOperationKind"];
+            cells: components["schemas"]["Cell"][];
+            /**
+             * Format: double
+             * @default 0
+             */
+            operand: number;
+            values?: null | (number)[];
+        };
+        /** @enum {unknown} */
+        MapOperationKind: "Set" | "Add" | "Multiply" | "Percent" | "Interpolate" | "Linearize" | "Smooth" | "Values";
         /** @enum {unknown} */
         MapRole: "Unknown" | "DriverWish" | "TorqueLimiter" | "GearTorqueLimiter" | "TorqueToIq" | "SmokeLimiter" | "BoostTarget" | "BoostLimiter" | "Svbl" | "VntDuty" | "Soi" | "Duration" | "RailPressure" | "LambdaTarget" | "EgtProtection" | "TemperatureProtection" | "RpmLimiter" | "GearboxTorqueMonitor";
         MapSummary: {
@@ -1831,6 +2970,8 @@ export interface components {
             /** Format: double */
             max: number;
         };
+        /** @enum {unknown} */
+        MatchLevel: "Exact" | "Strong" | "Probable" | "Weak" | "Unknown" | null;
         MemorySection: {
             name: string;
             /** Format: int32 */
@@ -1944,6 +3085,26 @@ export interface components {
             simulationCount: number;
             /** Format: uuid */
             latestAnalysisId?: null | string;
+            definition?: null | components["schemas"]["ProjectDefinition"];
+            edits: components["schemas"]["FileEdits"][];
+        };
+        ProjectDefinition: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            format: components["schemas"]["LibraryFormat"];
+            origin: components["schemas"]["DefinitionOrigin"];
+            sha256?: null | string;
+            /** Format: int64 */
+            size: number;
+            libraryEntryId?: null | string;
+            /** Format: int32 */
+            mapCount: number;
+            identifiers: components["schemas"]["LibraryIdentifiers"];
+            compatibility?: null | components["schemas"]["CompatibilityReport"];
+            checkedAgainst?: null | string;
+            /** Format: date-time */
+            boundAt: string;
         };
         ProjectFile: {
             /** Format: uuid */
@@ -1987,6 +3148,12 @@ export interface components {
             text: string;
             reason: string;
         };
+        RevertRequest: {
+            ranges?: null | components["schemas"]["ByteRange"][];
+            mapId?: null | string;
+            /** @default false */
+            all: boolean;
+        };
         RiskReport: {
             components: components["schemas"]["ComponentMargin"][];
             findings: components["schemas"]["Finding"][];
@@ -2004,6 +3171,35 @@ export interface components {
             source: components["schemas"]["SourceType"];
             evidence: components["schemas"]["Evidence"][];
         };
+        SaveCheck: {
+            canSave: boolean;
+            checks: components["schemas"]["SaveCheckItem"][];
+            checksum: components["schemas"]["ChecksumReport"];
+            suggestedName: string;
+            needsAcknowledgement: string[];
+        };
+        SaveCheckItem: {
+            id: string;
+            status: components["schemas"]["SaveCheckStatus"];
+            message: string;
+        };
+        /** @enum {unknown} */
+        SaveCheckStatus: "Pass" | "Warn" | "Fail";
+        SaveRequest: {
+            name: null | string;
+            /** @default false */
+            acknowledgeChecksumRisk: boolean;
+            /** @default false */
+            acknowledgeCodeChanges: boolean;
+        };
+        SaveResult: {
+            file: components["schemas"]["ProjectFile"];
+            check: components["schemas"]["SaveCheck"];
+            verified: boolean;
+            verification: string[];
+        };
+        /** @enum {unknown} */
+        ScanState: "Idle" | "Scanning" | "Failed";
         ScenarioSummary: {
             id: string;
             label: string;
@@ -2070,6 +3266,10 @@ export interface components {
             length: number;
             section: components["schemas"]["SectionKind"];
             nearestMapId: null | string;
+        };
+        UpdateLibraryRootBody: {
+            name: null | string;
+            downloadPath: null | string;
         };
         UpdateProjectBody: {
             name: null | string;
@@ -2178,6 +3378,17 @@ export interface components {
             serial: string;
             checkDigitValid?: null | boolean;
             warnings: string[];
+        };
+        WorkingHexDto: {
+            /** Format: int32 */
+            offset: number;
+            /** Format: int32 */
+            length: number;
+            /** Format: int32 */
+            fileSize: number;
+            working: string;
+            original: string;
+            changed: components["schemas"]["ByteRange"][];
         };
         WotSample: {
             /** Format: double */

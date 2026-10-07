@@ -18,6 +18,7 @@ public sealed record FileRoleBody(FileRole Role);
 public sealed record HardwareBody(IReadOnlyList<HardwareOverride> Overrides);
 public sealed record StartAnalysisBody(Guid? ModifiedFileId, Guid? StockFileId);
 public sealed record JobStarted(Guid JobId);
+public sealed record WorkingHexDto(int Offset, int Length, int FileSize, string Working, string Original, IReadOnlyList<ByteRange> Changed);
 public sealed record AddLibraryRootBody(string Path, string? Name);
 public sealed record UpdateLibraryRootBody(string? Name, string? DownloadPath);
 public sealed record LibraryEntryBody(string EntryId, bool Force = false);
@@ -93,6 +94,28 @@ public static class StudioEndpoints
         projects.MapPost("/{id:guid}/definition/library", (Guid id, LibraryEntryBody b, StudioService s, CancellationToken ct) =>
             s.BindLibraryDefinitionAsync(id, b.EntryId, b.Force, ct)).WithTags("definitions");
         projects.MapDelete("/{id:guid}/definition", (Guid id, StudioService s, CancellationToken ct) => s.UnbindDefinitionAsync(id, ct)).WithTags("definitions");
+
+        // ---- binary editing (patch model; stored files are never modified, saving creates a new file) ----
+        var ed = projects.MapGroup("/{id:guid}/files/{fileId:guid}").WithTags("editing");
+        ed.MapGet("/content", async (Guid id, Guid fileId, StudioService s, CancellationToken ct) =>
+        {
+            var (name, content) = await s.GetFileContentAsync(id, fileId, ct);
+            return Results.File(content, "application/octet-stream", name);
+        });
+        ed.MapGet("/edits", (Guid id, Guid fileId, StudioService s, CancellationToken ct) => s.GetEditStateAsync(id, fileId, ct));
+        ed.MapGet("/edits/hex", async (Guid id, Guid fileId, int? offset, int? length, StudioService s, CancellationToken ct) =>
+        {
+            var p = await s.GetWorkingHexAsync(id, fileId, offset ?? 0, length ?? 4096, ct);
+            return new WorkingHexDto(p.Offset, p.Length, p.FileSize, Convert.ToBase64String(p.Working), Convert.ToBase64String(p.Original), p.Changed);
+        });
+        ed.MapPost("/edits/hex", (Guid id, Guid fileId, HexEdit b, StudioService s, CancellationToken ct) => s.ApplyHexEditAsync(id, fileId, b, ct));
+        ed.MapPost("/edits/map/preview", (Guid id, Guid fileId, MapEditRequest b, StudioService s, CancellationToken ct) => s.PreviewMapEditAsync(id, fileId, b, ct));
+        ed.MapPost("/edits/map", (Guid id, Guid fileId, MapEditRequest b, StudioService s, CancellationToken ct) => s.ApplyMapEditAsync(id, fileId, b, ct));
+        ed.MapPost("/edits/undo", (Guid id, Guid fileId, StudioService s, CancellationToken ct) => s.UndoAsync(id, fileId, ct));
+        ed.MapPost("/edits/redo", (Guid id, Guid fileId, StudioService s, CancellationToken ct) => s.RedoAsync(id, fileId, ct));
+        ed.MapPost("/edits/revert", (Guid id, Guid fileId, RevertRequest b, StudioService s, CancellationToken ct) => s.RevertAsync(id, fileId, b, ct));
+        ed.MapPost("/edits/save-check", (Guid id, Guid fileId, SaveRequest? b, StudioService s, CancellationToken ct) => s.CheckSaveAsync(id, fileId, b, ct));
+        ed.MapPost("/edits/save", (Guid id, Guid fileId, SaveRequest b, StudioService s, CancellationToken ct) => s.SaveAsNewFileAsync(id, fileId, b, ct));
 
         // ---- definition library (local archive; metadata only, files stay where they are) ----
         var lib = api.MapGroup("/library").WithTags("library");

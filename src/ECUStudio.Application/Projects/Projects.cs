@@ -59,6 +59,8 @@ public sealed record Project
     public Guid? LatestAnalysisId { get; init; }
     /// <summary>External definition bound by the user (uploaded or chosen from the library).</summary>
     public ProjectDefinition? Definition { get; init; }
+    /// <summary>Patch histories of edited files (the stored files are never modified).</summary>
+    public IReadOnlyList<Analysis.FileEdits> Edits { get; init; } = [];
 
     [JsonIgnore] public ProjectFile? Stock => Files.FirstOrDefault(f => f.Role == FileRole.Stock);
 }

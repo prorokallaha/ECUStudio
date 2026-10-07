@@ -42,7 +42,17 @@ public sealed record DefinitionResolution(
 /// interface, so new families (EDC15/17, MED17, MD1, MG1, SID, Delphi, Marelli) plug in
 /// without changes to the simulation core.
 /// </summary>
-public interface IEcuPlugin
+/// <summary>Checksum handling of one ECU family. Only blocks a definition describes are verified or corrected.</summary>
+public interface IChecksumProvider
+{
+    /// <summary>
+    /// Recalculates the described blocks in <paramref name="data"/> in place. Returns Unsupported (and changes nothing)
+    /// when no blocks are known: such a file must never be presented as safe to write.
+    /// </summary>
+    ChecksumReport CorrectChecksums(Span<byte> data, IReadOnlyList<ChecksumSpec> blocks);
+}
+
+public interface IEcuPlugin : IChecksumProvider
 {
     string PluginId { get; }
     string DisplayName { get; }

@@ -87,7 +87,7 @@ export const ru = {
   valueKind: { Estimated: "Оценка", EcuRequested: "Запрос ЭБУ", Measured: "Измерено", Spec: "Паспорт", Assumed: "Допущение", Unknown: "Неизвестно", NotApplicable: "Неприменимо" },
   endian: { Big: "Прямой (BE)", Little: "Обратный (LE)" },
   sectionKind: { Boot: "Загрузчик", Code: "Код", Calibration: "Калибровка", Data: "Данные", Empty: "Пусто", Unknown: "Неизвестно" },
-  checksum: { Valid: "Верны", Invalid: "Неверны", NotImplemented: "Не реализовано", Unknown: "Неизвестно" },
+  checksum: { Valid: "Верны", Invalid: "Неверны", Corrected: "Исправлены", Unknown: "Неизвестно", Unsupported: "Не поддерживается" },
   candidateStatus: { Candidate: "Кандидат", Confirmed: "Подтверждена", Rejected: "Отклонена" },
   nodeState: { Stock: "Сток", Modified: "Изменена", Warning: "Внимание", Danger: "Опасно", Unknown: "Неизвестно", NotApplicable: "Н/Д" },
   limiter: {

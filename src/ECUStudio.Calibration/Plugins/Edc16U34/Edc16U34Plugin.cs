@@ -143,9 +143,14 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
     }
 
     public ChecksumReport VerifyChecksums(BinaryImage image, IReadOnlyList<ChecksumSpec> blocks) => blocks.Count == 0
-        ? new(ChecksumStatus.NotImplemented, [],
+        ? new(ChecksumStatus.Unsupported, [],
             "No checksum blocks are described for this software version, and EDC16U34 checksum locations are not guessed. Add them to the definition to verify. ECUStudio analyses files; it does not prepare them for flashing.")
         : ChecksumVerifier.Verify(image.Span, blocks, "EDC16U34, blocks from the definition");
+
+    public ChecksumReport CorrectChecksums(Span<byte> data, IReadOnlyList<ChecksumSpec> blocks) => blocks.Count == 0
+        ? new(ChecksumStatus.Unsupported, [],
+            "EDC16U34 checksum locations are not known for this software version and are not guessed: checksums were NOT corrected. The file must not be written to an ECU as is.")
+        : ChecksumVerifier.Correct(data, blocks, "EDC16U34, blocks from the definition");
 
     public static MapDefinition FromCandidate(MapCandidate c, MapRole role)
     {

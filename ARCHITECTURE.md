@@ -17,7 +17,7 @@
 | Утверждение AI без ссылки на доказательство из индекса контекста отклоняется | `AIResponseValidator.ParseFindings` |
 | AI не может понизить серьёзность, полученную из физики; сам по себе эскалирует максимум до `WARNING` | `ConsensusEngine.Combine` |
 | Неизвестная карта — кандидат, пока человек не подтвердит (CONFIRM / REJECT / EDIT DEFINITION) | `MapCandidate`, `candidate_decisions` |
-| Контрольные суммы проверяются только по блокам, описанным в определении; без описания — `NotImplemented`, а не «Valid». «Valid» не значит «готово к записи» | `ChecksumVerifier`, `Edc16U34Plugin.VerifyChecksums` |
+| Контрольные суммы проверяются только по блокам, описанным в определении; без описания — `Unsupported`, а не «Valid». «Valid» не значит «готово к записи» | `ChecksumVerifier`, `Edc16U34Plugin.VerifyChecksums` |
 | Лог повышает data availability, только если все сравнимые каналы совпадают с моделью; расхождение — finding, а не усреднение | `LogValidator`, `AnalysisPipeline.Availability` |
 
 ## 2. Структура решения
@@ -220,7 +220,7 @@ severity, EstimateValue, LoadBar), `components/layout` (top bar, nav, AI-пан�
 
 Сейчас:
 * Чексуммы проверяются только по блокам из `*.ecudef.json` (ADD8/16/32, CRC16-CCITT, CRC32, complement).
-  Реальные адреса блоков EDC16U34 не зашиты и не угадываются: без описания статус `NotImplemented`.
+  Реальные адреса блоков EDC16U34 не зашиты и не угадываются: без описания статус `Unsupported`.
   Коррекции чексумм нет и не будет: ECUStudio анализирует файлы, а не готовит их к записи.
 * A2L: подмножество (VALUE/CURVE/MAP/VAL_BLK, STD/COM/FIX оси, IDENTICAL/LINEAR/линейный RAT_FUNC,
   ROW/COLUMN_DIR). Остальное пропускается поштучно и перечисляется в заметках определения.

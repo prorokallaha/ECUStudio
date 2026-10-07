@@ -35,7 +35,7 @@ public sealed record AIJobResult(Guid AnalysisId, AIAnalysisResult Result);
 /// Application facade shared by API, CLI and desktop host: projects, files, analyses (with progress),
 /// interactive queries (maps, hex, dyno, inspector) and the AI layer. No business logic lives in the hosts.
 /// </summary>
-public sealed class StudioService(
+public sealed partial class StudioService(
     IProjectStore store,
     AnalysisPipeline pipeline,
     PluginRegistry plugins,
