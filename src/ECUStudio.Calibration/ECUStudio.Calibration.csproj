@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECUStudio.Core\ECUStudio.Core.csproj" />
+    <ProjectReference Include="..\ECUStudio.Binary\ECUStudio.Binary.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+</Project>

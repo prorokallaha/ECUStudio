@@ -1,0 +1,670 @@
+[
+ {
+  "id": "vw_golf5_bkc",
+  "make": "Volkswagen",
+  "model": "Golf V / Jetta 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW",
+   "3VW"
+  ],
+  "platformCodes": [
+   "1K"
+  ],
+  "yearFrom": 2003,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_golfplus_bkc",
+  "make": "Volkswagen",
+  "model": "Golf Plus 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "5M"
+  ],
+  "yearFrom": 2003,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_touran_bkc",
+  "make": "Volkswagen",
+  "model": "Touran 1.9 TDI 77 kW",
+  "wmi": [
+   "WVG",
+   "WVW"
+  ],
+  "platformCodes": [
+   "1T"
+  ],
+  "yearFrom": 2003,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_passat_b6_bkc",
+  "make": "Volkswagen",
+  "model": "Passat B6 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "skoda_octavia2_bkc",
+  "make": "Skoda",
+  "model": "Octavia II 1.9 TDI 77 kW",
+  "wmi": [
+   "TMB"
+  ],
+  "platformCodes": [
+   "1Z"
+  ],
+  "yearFrom": 2004,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "seat_leon2_bkc",
+  "make": "SEAT",
+  "model": "Leon II 1.9 TDI 77 kW",
+  "wmi": [
+   "VSS"
+  ],
+  "platformCodes": [
+   "1P"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2008,
+  "engineCode": "BKC",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_golf5_bxe",
+  "make": "Volkswagen",
+  "model": "Golf V / Jetta 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW",
+   "3VW"
+  ],
+  "platformCodes": [
+   "1K"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_golfplus_bxe",
+  "make": "Volkswagen",
+  "model": "Golf Plus 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "5M"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_touran_bxe",
+  "make": "Volkswagen",
+  "model": "Touran 1.9 TDI 77 kW",
+  "wmi": [
+   "WVG",
+   "WVW"
+  ],
+  "platformCodes": [
+   "1T"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_passat_b6_bxe",
+  "make": "Volkswagen",
+  "model": "Passat B6 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "skoda_octavia2_bxe",
+  "make": "Skoda",
+  "model": "Octavia II 1.9 TDI 77 kW",
+  "wmi": [
+   "TMB"
+  ],
+  "platformCodes": [
+   "1Z"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "seat_leon2_bxe",
+  "make": "SEAT",
+  "model": "Leon II 1.9 TDI 77 kW",
+  "wmi": [
+   "VSS"
+  ],
+  "platformCodes": [
+   "1P"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BXE",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_golf5_bls",
+  "make": "Volkswagen",
+  "model": "Golf V / Jetta 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW",
+   "3VW"
+  ],
+  "platformCodes": [
+   "1K"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_golfplus_bls",
+  "make": "Volkswagen",
+  "model": "Golf Plus 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "5M"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_touran_bls",
+  "make": "Volkswagen",
+  "model": "Touran 1.9 TDI 77 kW",
+  "wmi": [
+   "WVG",
+   "WVW"
+  ],
+  "platformCodes": [
+   "1T"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_passat_b6_bls",
+  "make": "Volkswagen",
+  "model": "Passat B6 1.9 TDI 77 kW",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "skoda_octavia2_bls",
+  "make": "Skoda",
+  "model": "Octavia II 1.9 TDI 77 kW",
+  "wmi": [
+   "TMB"
+  ],
+  "platformCodes": [
+   "1Z"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "seat_leon2_bls",
+  "make": "SEAT",
+  "model": "Leon II 1.9 TDI 77 kW",
+  "wmi": [
+   "VSS"
+  ],
+  "platformCodes": [
+   "1P"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2009,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_caddy3_bjb",
+  "make": "Volkswagen",
+  "model": "Caddy III 1.9 TDI 77 kW",
+  "wmi": [
+   "WV1",
+   "WV2"
+  ],
+  "platformCodes": [
+   "2K"
+  ],
+  "yearFrom": 2004,
+  "yearTo": 2010,
+  "engineCode": "BJB",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ },
+ {
+  "id": "vw_caddy3_bls",
+  "make": "Volkswagen",
+  "model": "Caddy III 1.9 TDI 77 kW",
+  "wmi": [
+   "WV1",
+   "WV2"
+  ],
+  "platformCodes": [
+   "2K"
+  ],
+  "yearFrom": 2004,
+  "yearTo": 2010,
+  "engineCode": "BLS",
+  "engineFamily": "VAG_PD_19",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "engine": "engine_vag_19tdi_pd_77kw",
+   "turbo": "turbo_oem_pd77",
+   "injectors": "injectors_pd_oem_77kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_5spd_pq35",
+   "clutch": "clutch_oem_pd77",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_5spd_pq35",
+   "trans_dsg_dq250"
+  ]
+ }
+]

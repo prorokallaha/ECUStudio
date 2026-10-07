@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECUStudio.Application\ECUStudio.Application.csproj" />
+    <ProjectReference Include="..\ECUStudio.Infrastructure\ECUStudio.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.12" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ecustudio</AssemblyName>
+    <RootNamespace>ECUStudio.Cli</RootNamespace>
+  </PropertyGroup>
+
+</Project>

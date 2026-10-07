@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECUStudio.Core\ECUStudio.Core.csproj" />
+    <ProjectReference Include="..\ECUStudio.Binary\ECUStudio.Binary.csproj" />
+    <ProjectReference Include="..\ECUStudio.Calibration\ECUStudio.Calibration.csproj" />
+    <ProjectReference Include="..\ECUStudio.Vehicle\ECUStudio.Vehicle.csproj" />
+    <ProjectReference Include="..\ECUStudio.Components\ECUStudio.Components.csproj" />
+    <ProjectReference Include="..\ECUStudio.Simulation\ECUStudio.Simulation.csproj" />
+    <ProjectReference Include="..\ECUStudio.Risk\ECUStudio.Risk.csproj" />
+    <ProjectReference Include="..\ECUStudio.AI\ECUStudio.AI.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+</Project>
