@@ -1,0 +1,78 @@
+/** Reference dictionary (default language). `en.ts` must mirror this shape. */
+export const ru = {
+  common: {
+    unknown: "НЕИЗВЕСТНО", loading: "Загрузка…", save: "Сохранить", cancel: "Отмена", apply: "Применить", reset: "Сбросить", close: "Закрыть",
+    use: "Выбрать", inUse: "выбрано", override: "Заменить", delete: "Удалить", upload: "Загрузить", open: "Открыть", yes: "Да", no: "Нет",
+    confidence: "Уверенность", source: "Источник", evidence: "Основание", alternatives: "Альтернативы", status: "Статус", value: "Значение",
+    runAnalysis: "Запустить анализ", rerun: "Пересчитать", notAvailable: "недоступно", requiresVerification: "требует проверки",
+  },
+  nav: {
+    projects: "Проекты", dashboard: "Сводка", vehicle: "Автомобиль", ecu: "ЭБУ", binary: "Бинарь", maps: "Карты", diff: "Сравнение",
+    dependencies: "Зависимости", simulation: "Симуляция", dyno: "Виртуальный стенд", components: "Компоненты", risks: "Риски",
+    logs: "Логи", ai: "AI-аналитик", reports: "Отчёты", settings: "Настройки",
+  },
+  confidence: {
+    HIGH: "ВЫСОКАЯ", MEDIUM: "СРЕДНЯЯ", LOW: "НИЗКАЯ", UNKNOWN: "НЕИЗВ.",
+    tooltip: "Уверенность {score}: насколько входные данные подтверждают значение, а не насколько оно велико.",
+  },
+  severity: { Safe: "БЕЗОПАСНО", Review: "ПРОВЕРИТЬ", Warning: "ВНИМАНИЕ", Danger: "ОПАСНО", Unknown: "НЕИЗВЕСТНО" },
+  source: {
+    OemSpec: "OEM", PublicSpec: "Публичные данные", Database: "База", VariantTypical: "База · типично", VinDecode: "VIN",
+    EcuBinary: "Бинарь ЭБУ", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "База определений", SignatureScan: "Сигнатуры",
+    DiagnosticLog: "Лог", Calculated: "Расчёт", AIInferred: "Вывод AI", User: "Пользователь", Assumption: "Допущение", Unknown: "Неизвестно",
+  },
+  role: {
+    Unknown: "Неизвестная карта", DriverWish: "Желание водителя (Driver Wish)", TorqueLimiter: "Ограничитель момента (Torque Limiter)",
+    GearTorqueLimiter: "Ограничитель момента по передачам", TorqueToIq: "Момент → топливо (Torque → IQ)", SmokeLimiter: "Ограничитель дымности (Smoke)",
+    BoostTarget: "Давление наддува, цель (Boost)", BoostLimiter: "Ограничитель наддува", Svbl: "Порог наддува (SVBL)", VntDuty: "Управление VNT / N75",
+    Soi: "Начало впрыска (SOI)", Duration: "Длительность впрыска", RailPressure: "Давление в рейке", LambdaTarget: "Лямбда, цель",
+    EgtProtection: "Защита по EGT", TemperatureProtection: "Защита по температуре", RpmLimiter: "Ограничитель оборотов", GearboxTorqueMonitor: "Момент для КПП",
+  },
+  settings: {
+    title: "Настройки", appearance: "Внешний вид", language: "Язык", theme: "Тема", dark: "Тёмная", light: "Светлая",
+    hexEndian: "Порядок байт в hex по умолчанию", engine: "Движок", analysisVersion: "Версия анализа", aiProvider: "AI-провайдер",
+    aiConfigured: "Claude (настроен)", aiMissing: "не настроен: задайте ANTHROPIC_API_KEY", plugin: "Плагин {id}", commonRail: "common rail",
+    unitInjector: "насос-форсунки", keyboard: "Клавиатура", data: "Данные",
+    dataDesktop: "Desktop: проекты хранятся во встроенной базе SQLite в %LOCALAPPDATA%\\ECUStudio. Сервер: PostgreSQL.",
+    dataBrowser: "Раскладка, закладки и настройки просмотра хранятся в профиле браузера.",
+    shortcuts: {
+      palette: "Палитра команд", find: "Найти карту или адрес", save: "Сохранить (проекты сохраняются сами)", undo: "Отменить изменение",
+      redo: "Повторить", fit: "Вписать граф зависимостей", cursor: "Курсор в hex-просмотре",
+    },
+  },
+  vehicle: {
+    title: "Автомобиль", subtitle: "VIN — это основание, а не доказательство установленного железа. Замените то, что проверили сами.",
+    identification: "Идентификация", vin: "VIN", vinPlaceholder: "17 символов", vinSaved: "VIN сохранён, пересчитываю",
+    make: "Марка", model: "Модель", modelYear: "Модельный год", engineCode: "Код двигателя", platform: "Платформа",
+    vinLine: "{manufacturer} · {region} · {year} модельный год · платформа {platform}",
+    candidates: "Варианты", candidatesSubtitle: "по VIN, идентификации ЭБУ и каталогам", variant: "Вариант", engine: "Двигатель", years: "Годы",
+    probability: "Вероятность", why: "Почему", conflicts: "Противоречит", transmission: "КПП", variantDefault: "по варианту",
+    notInDb: "Вне базы: {p}", evidenceTitle: "Основания", provider: "Источник", fact: "Факт",
+    status: {
+      Resolved: "Определён", Ambiguous: "Неоднозначно", NotInDatabase: "Нет в базе", NoData: "Нет данных",
+    },
+    statusHint: {
+      Resolved: "Одна конфигурация двигателя и ЭБУ явно впереди.",
+      Ambiguous: "Несколько вариантов из базы остаются возможными.",
+      NotInDatabase: "Сильные данные (строка двигателя в ЭБУ, семейство ЭБУ, платформа) противоречат всем вариантам базы. Железо не берётся из ближайшего неверного варианта.",
+      NoData: "Нет VIN и данных ЭБУ.",
+    },
+    configuration: "Комплектация", configurationSubtitle: "Каждое значение с источником и уверенностью. Нет данных — НЕИЗВЕСТНО, ничего не придумывается.",
+    partNumber: "Номер детали",
+    group: { engine: "Двигатель", ecu: "ЭБУ", air: "Воздух и наддув", fuel: "Топливо", drivetrain: "Трансмиссия", emissions: "Экология и датчики" },
+    item: {
+      engine_code: "Код двигателя", displacement: "Объём", cylinders: "Цилиндры", power: "Мощность", torque: "Момент", injection_system: "Система впрыска",
+      ecu: "ЭБУ", ecu_hw: "HW ЭБУ", ecu_sw: "SW ЭБУ", ecu_oem: "OEM номер ЭБУ", calibration_id: "ID калибровки",
+      turbo: "Турбина", turbo_part: "Номер турбины", intercooler: "Интеркулер", maf: "ДМРВ (MAF)", map_sensor: "Датчик давления (MAP)",
+      boost_sensor_range: "Диапазон датчика наддува", injectors: "Форсунки", injector_part: "Номера форсунок", fuel_pump: "ТНВД / тандемный насос",
+      gearbox: "КПП", gearbox_code: "Код КПП", gears: "Число передач", clutch: "Сцепление", dual_mass_flywheel: "Двухмассовый маховик",
+      drivetrain: "Привод", emission_standard: "Экостандарт", dpf: "Сажевый фильтр (DPF)", egr: "EGR", lambda_sensors: "Лямбда-зонды",
+      egt_sensors: "Датчики EGT", glow_plugs: "Свечи накала", glow_plug_controller: "Блок свечей накала",
+    },
+    itemStatus: { Verified: "Проверено", Resolved: "Определено", Ambiguous: "Неоднозначно", Unknown: "Неизвестно" },
+    hardware: "Профиль железа", hardwareSubtitle: "Симуляция и риски используют эти пределы. Неизвестные пределы остаются НЕИЗВЕСТНЫМИ и не угадываются.",
+    runFirst: "Запустите анализ, чтобы определить профиль железа.", overrideBadge: "заменено",
+    kind: { Engine: "Двигатель", Turbo: "Турбина", Injectors: "Форсунки", FuelSystem: "Топливная система", Transmission: "КПП", Clutch: "Сцепление", Intercooler: "Интеркулер", Sensors: "Датчики", Emissions: "Экология" },
+    overrideLabel: "{kind} → {id}", resetLabel: "Сброс: {kind}",
+  },
+};

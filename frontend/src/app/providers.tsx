@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { useUI } from "@/stores/ui";
 import { ApiError } from "@/services/api";
+import { useLang } from "@/i18n";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -19,6 +20,8 @@ export function Providers({ children }: { children: ReactNode }) {
   );
   const theme = useUI((s) => s.theme);
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
+  const lang = useLang((s) => s.lang);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   return (
     <QueryClientProvider client={client}>
       {children}

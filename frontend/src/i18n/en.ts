@@ -1,0 +1,76 @@
+import type { Dictionary } from "./index";
+
+export const en: Dictionary = {
+  common: {
+    unknown: "UNKNOWN", loading: "Loading…", save: "Save", cancel: "Cancel", apply: "Apply", reset: "Reset", close: "Close",
+    use: "Use", inUse: "in use", override: "Override", delete: "Delete", upload: "Upload", open: "Open", yes: "Yes", no: "No",
+    confidence: "Confidence", source: "Source", evidence: "Evidence", alternatives: "Alternatives", status: "Status", value: "Value",
+    runAnalysis: "Run analysis", rerun: "Re-run", notAvailable: "unavailable", requiresVerification: "requires verification",
+  },
+  nav: {
+    projects: "Projects", dashboard: "Dashboard", vehicle: "Vehicle", ecu: "ECU", binary: "Binary", maps: "Maps", diff: "Diff",
+    dependencies: "Dependencies", simulation: "Simulation", dyno: "Virtual Dyno", components: "Components", risks: "Risks",
+    logs: "Logs", ai: "AI Analyst", reports: "Reports", settings: "Settings",
+  },
+  confidence: {
+    HIGH: "HIGH", MEDIUM: "MEDIUM", LOW: "LOW", UNKNOWN: "UNKNOWN",
+    tooltip: "Confidence {score}: how much the inputs support this value, not how large it is.",
+  },
+  severity: { Safe: "SAFE", Review: "REVIEW", Warning: "WARNING", Danger: "DANGER", Unknown: "UNKNOWN" },
+  source: {
+    OemSpec: "OEM", PublicSpec: "Public spec", Database: "Database", VariantTypical: "Database · typical", VinDecode: "VIN decode",
+    EcuBinary: "ECU binary", Damos: "DAMOS", A2L: "A2L", Xdf: "XDF", DefinitionDb: "Definition DB", SignatureScan: "Signature scan",
+    DiagnosticLog: "Diagnostic log", Calculated: "Calculated", AIInferred: "AI inferred", User: "User entered", Assumption: "Assumption", Unknown: "Unknown",
+  },
+  role: {
+    Unknown: "Unknown map", DriverWish: "Driver Wish", TorqueLimiter: "Torque Limiter", GearTorqueLimiter: "Gear Torque Limiter",
+    TorqueToIq: "Torque → IQ", SmokeLimiter: "Smoke Limiter", BoostTarget: "Boost Target", BoostLimiter: "Boost Limiter", Svbl: "SVBL",
+    VntDuty: "VNT / N75 Duty", Soi: "Start of Injection (SOI)", Duration: "Injection Duration", RailPressure: "Rail Pressure", LambdaTarget: "Lambda Target",
+    EgtProtection: "EGT Protection", TemperatureProtection: "Temperature Protection", RpmLimiter: "RPM Limiter", GearboxTorqueMonitor: "Gearbox Torque Monitor",
+  },
+  settings: {
+    title: "Settings", appearance: "Appearance", language: "Language", theme: "Theme", dark: "Dark", light: "Light",
+    hexEndian: "Hex default endianness", engine: "Engine", analysisVersion: "Analysis version", aiProvider: "AI provider",
+    aiConfigured: "Claude (configured)", aiMissing: "not configured: set ANTHROPIC_API_KEY", plugin: "Plugin {id}", commonRail: "common rail",
+    unitInjector: "unit injector", keyboard: "Keyboard", data: "Data",
+    dataDesktop: "Desktop: projects live in an embedded SQLite database in %LOCALAPPDATA%\\ECUStudio. Server: PostgreSQL.",
+    dataBrowser: "Layout, bookmarks and viewer preferences are stored per browser profile.",
+    shortcuts: {
+      palette: "Command palette", find: "Find map or address", save: "Save (projects autosave)", undo: "Undo change",
+      redo: "Redo", fit: "Fit dependency graph", cursor: "Move cursor in hex viewer",
+    },
+  },
+  vehicle: {
+    title: "Vehicle", subtitle: "VIN is evidence, not proof of installed hardware. Override what you have verified.",
+    identification: "Identification", vin: "VIN", vinPlaceholder: "17 characters", vinSaved: "VIN saved, recomputing",
+    make: "Make", model: "Model", modelYear: "Model year", engineCode: "Engine code", platform: "Platform",
+    vinLine: "{manufacturer} · {region} · MY {year} · platform {platform}",
+    candidates: "Variant candidates", candidatesSubtitle: "from VIN, ECU identification and catalogues", variant: "Variant", engine: "Engine", years: "Years",
+    probability: "Probability", why: "Why", conflicts: "Contradicts", transmission: "Transmission", variantDefault: "Variant default",
+    notInDb: "Not in database: {p}", evidenceTitle: "Evidence", provider: "Provider", fact: "Fact",
+    status: { Resolved: "Resolved", Ambiguous: "Ambiguous", NotInDatabase: "Not in database", NoData: "No data" },
+    statusHint: {
+      Resolved: "One engine/ECU configuration is clearly ahead.",
+      Ambiguous: "Several catalogued variants remain plausible.",
+      NotInDatabase: "Strong evidence (ECU engine string, ECU family, platform) contradicts every catalogued variant. Hardware is not taken from the closest wrong variant.",
+      NoData: "No VIN and no ECU facts.",
+    },
+    configuration: "Configuration", configurationSubtitle: "Every value with source and confidence. No data means UNKNOWN; nothing is invented.",
+    partNumber: "Part number",
+    group: { engine: "Engine", ecu: "ECU", air: "Air & boost", fuel: "Fuel", drivetrain: "Drivetrain", emissions: "Emissions & sensors" },
+    item: {
+      engine_code: "Engine code", displacement: "Displacement", cylinders: "Cylinders", power: "Power", torque: "Torque", injection_system: "Injection system",
+      ecu: "ECU", ecu_hw: "ECU HW", ecu_sw: "ECU SW", ecu_oem: "ECU OEM number", calibration_id: "Calibration ID",
+      turbo: "Turbocharger", turbo_part: "Turbo part number", intercooler: "Intercooler", maf: "MAF", map_sensor: "MAP sensor",
+      boost_sensor_range: "Boost sensor range", injectors: "Injectors", injector_part: "Injector part numbers", fuel_pump: "Fuel pump",
+      gearbox: "Gearbox", gearbox_code: "Gearbox code", gears: "Gears", clutch: "Clutch", dual_mass_flywheel: "Dual-mass flywheel",
+      drivetrain: "Drivetrain", emission_standard: "Emission standard", dpf: "DPF", egr: "EGR", lambda_sensors: "Lambda sensors",
+      egt_sensors: "EGT sensors", glow_plugs: "Glow plugs", glow_plug_controller: "Glow plug controller",
+    },
+    itemStatus: { Verified: "Verified", Resolved: "Resolved", Ambiguous: "Ambiguous", Unknown: "Unknown" },
+    hardware: "Hardware profile", hardwareSubtitle: "Simulation and risk use these limits. Unknown limits stay UNKNOWN; they are never guessed.",
+    runFirst: "Run an analysis to resolve the hardware profile.", overrideBadge: "override",
+    kind: { Engine: "Engine", Turbo: "Turbo", Injectors: "Injectors", FuelSystem: "Fuel system", Transmission: "Transmission", Clutch: "Clutch", Intercooler: "Intercooler", Sensors: "Sensors", Emissions: "Emissions" },
+    overrideLabel: "{kind} → {id}", resetLabel: "Reset {kind}",
+  },
+};

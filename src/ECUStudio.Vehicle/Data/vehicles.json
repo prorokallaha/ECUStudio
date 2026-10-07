@@ -666,5 +666,139 @@
    "trans_manual_5spd_pq35",
    "trans_dsg_dq250"
   ]
+ },
+ {
+  "id": "vw_passat_b6_bmp",
+  "make": "Volkswagen",
+  "model": "Passat B6 2.0 TDI 103 kW (8V PD)",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2008,
+  "engineCode": "BMP",
+  "engineFamily": "VAG_PD_20",
+  "ecuPlugins": [
+   "edc16u34"
+  ],
+  "components": {
+   "turbo": "turbo_oem_20tdi",
+   "injectors": "injectors_pd_oem_103kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_6spd_pq46",
+   "clutch": "clutch_oem_dmf",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr",
+   "engine": "engine_vag_20tdi_pd_103kw"
+  },
+  "transmissionOptions": [
+   "trans_manual_6spd_pq46",
+   "trans_dsg_dq250"
+  ],
+  "note": "8-valve PD, reported with Bosch EDC16U34 (03G906021xx)."
+ },
+ {
+  "id": "vw_passat_b6_bkp",
+  "make": "Volkswagen",
+  "model": "Passat B6 2.0 TDI 103 kW (16V PD)",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2008,
+  "engineCode": "BKP",
+  "engineFamily": "VAG_PD_20",
+  "ecuPlugins": [
+   "siemens_ppd1"
+  ],
+  "components": {
+   "turbo": "turbo_oem_20tdi",
+   "injectors": "injectors_pd_oem_103kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_6spd_pq46",
+   "clutch": "clutch_oem_dmf",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_maf_map",
+   "emissions": "emis_eu4_egr",
+   "engine": "engine_vag_20tdi_pd_103kw"
+  },
+  "transmissionOptions": [
+   "trans_manual_6spd_pq46",
+   "trans_dsg_dq250"
+  ],
+  "note": "16-valve PD, reported with Siemens PPD1 (03G906018xx)."
+ },
+ {
+  "id": "vw_passat_b6_bmr",
+  "make": "Volkswagen",
+  "model": "Passat B6 2.0 TDI 125 kW (16V PD)",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2005,
+  "yearTo": 2008,
+  "engineCode": "BMR",
+  "engineFamily": "VAG_PD_20",
+  "ecuPlugins": [
+   "siemens_ppd1"
+  ],
+  "components": {
+   "turbo": "turbo_oem_20tdi",
+   "injectors": "injectors_pd_oem_103kw",
+   "fuelSystem": "fuel_pd_tandem",
+   "transmission": "trans_manual_6spd_pq46",
+   "clutch": "clutch_oem_dmf",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf",
+   "engine": "engine_vag_20tdi_pd_125kw"
+  },
+  "transmissionOptions": [
+   "trans_manual_6spd_pq46",
+   "trans_dsg_dq250"
+  ],
+  "note": "Reported with Siemens PPD1.5 and DPF."
+ },
+ {
+  "id": "vw_passat_b6_cbab",
+  "make": "Volkswagen",
+  "model": "Passat B6 2.0 TDI 103 kW (CR)",
+  "wmi": [
+   "WVW"
+  ],
+  "platformCodes": [
+   "3C"
+  ],
+  "yearFrom": 2008,
+  "yearTo": 2010,
+  "engineCode": "CBAB",
+  "engineFamily": "VAG_CR_20",
+  "ecuPlugins": [
+   "edc17"
+  ],
+  "components": {
+   "engine": "engine_vag_20tdi_cr_103kw",
+   "turbo": "turbo_oem_20tdi",
+   "transmission": "trans_manual_6spd_pq46",
+   "clutch": "clutch_oem_dmf",
+   "intercooler": "ic_oem_air_air",
+   "sensors": "sensors_pd_dpf",
+   "emissions": "emis_eu4_egr_dpf"
+  },
+  "transmissionOptions": [
+   "trans_manual_6spd_pq46",
+   "trans_dsg_dq250"
+  ],
+  "note": "Common rail, reported with Bosch EDC17 and DPF."
  }
 ]

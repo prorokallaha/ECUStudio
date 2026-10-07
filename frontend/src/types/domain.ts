@@ -54,3 +54,6 @@ export type LogValidation = S["LogValidation"];
 export type ChannelValidation = S["ChannelValidation"];
 export type LogAgreement = S["LogAgreement"];
 export type LogBin = S["LogBin"];
+export type ConfigurationItem = S["ConfigurationItem"];
+export type VehicleMatchStatus = S["VehicleMatchStatus"];
+export type VehicleEvidence = S["VehicleEvidence"];

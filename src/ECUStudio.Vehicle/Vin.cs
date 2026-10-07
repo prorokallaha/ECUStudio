@@ -10,6 +10,8 @@ public sealed record VinInfo
     public string? Region { get; init; }
     public string Vds { get; init; } = "";
     public string? PlatformCode { get; init; }
+    /// <summary>Model line the VAG platform code usually denotes (e.g. 3C → Passat B6). Evidence, not proof.</summary>
+    public string? PlatformName { get; init; }
     public int? ModelYear { get; init; }
     public char PlantCode { get; init; }
     public string Serial { get; init; } = "";
@@ -24,6 +26,15 @@ public static class VinDecoder
     {
         ["WVW"] = "Volkswagen (passenger)", ["WVG"] = "Volkswagen (SUV/MPV)", ["WV1"] = "Volkswagen Commercial", ["WV2"] = "Volkswagen Commercial (bus/van)",
         ["WAU"] = "Audi", ["TMB"] = "Skoda", ["VSS"] = "SEAT", ["3VW"] = "Volkswagen Mexico", ["9BW"] = "Volkswagen Brazil", ["AAV"] = "Volkswagen South Africa",
+    };
+
+    /// <summary>VAG positions 7–8 → model line. Codes are reused across brands; the WMI disambiguates the make.</summary>
+    internal static readonly Dictionary<string, string> VagPlatforms = new()
+    {
+        ["1K"] = "Golf V / Jetta", ["5K"] = "Golf VI", ["5M"] = "Golf Plus", ["1T"] = "Touran", ["3C"] = "Passat B6", ["3B"] = "Passat B5",
+        ["2K"] = "Caddy III", ["1F"] = "Eos", ["13"] = "Scirocco", ["7H"] = "Transporter T5", ["7L"] = "Touareg", ["5N"] = "Tiguan",
+        ["1Z"] = "Octavia II", ["3T"] = "Superb II", ["5J"] = "Fabia II / Roomster", ["1P"] = "Leon II", ["5P"] = "Altea / Toledo III",
+        ["8P"] = "A3 (8P)", ["8E"] = "A4 (B6/B7)", ["8K"] = "A4 (B8)", ["4F"] = "A6 (C6)",
     };
 
     private static readonly int[] Weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
@@ -73,7 +84,7 @@ public static class VinDecoder
         return new VinInfo
         {
             Vin = vin, Wmi = wmi, Manufacturer = Wmi.GetValueOrDefault(wmi), Region = region, Vds = vin.Substring(3, 6),
-            PlatformCode = platform, ModelYear = year, PlantCode = vin[10], Serial = vin[11..], CheckDigitValid = check, Warnings = warnings,
+            PlatformCode = platform, PlatformName = platform is null ? null : VagPlatforms.GetValueOrDefault(platform), ModelYear = year, PlantCode = vin[10], Serial = vin[11..], CheckDigitValid = check, Warnings = warnings,
         };
     }
 

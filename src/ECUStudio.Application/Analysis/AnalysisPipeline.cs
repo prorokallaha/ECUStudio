@@ -9,6 +9,7 @@ using ECUStudio.Core;
 using ECUStudio.Risk;
 using ECUStudio.Simulation;
 using ECUStudio.Vehicle;
+using ECUStudio.Vehicle.Resolution;
 
 namespace ECUStudio.Application.Analysis;
 
@@ -52,7 +53,7 @@ public sealed record AnalysisSession
 /// BIN → plugin detect/identify → definitions → CalibrationSet → diff/anomalies/Stage1 →
 /// vehicle/components → simulation grid → risk → explain. No AI here (see AIAnalysisService).
 /// </summary>
-public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBase kb, ISimulationEngine engine)
+public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBase kb, ISimulationEngine engine, VehicleResolver? vehicleResolver = null)
 {
     public const string AnalysisVersion = "0.1.0";
 
@@ -115,7 +116,17 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         ct.ThrowIfCancellationRequested();
 
         Step("vehicle", StepState.Running);
-        var vehicle = new VehicleResolver(kb).Resolve(req.Vin, plugin.PluginId, plugin.EngineFamilies, req.Overrides, req.PreferredVariantId, req.TransmissionId);
+        var vehicle = (vehicleResolver ?? new VehicleResolver(kb)).Resolve(new VehicleQuery
+        {
+            Vin = req.Vin,
+            Ecu = new EcuFacts
+            {
+                PluginId = plugin.PluginId, EcuFamily = ident.EcuFamily, DetectionScore = detection.Score, EngineFamilies = plugin.EngineFamilies,
+                BoschNumber = ident.BoschNumber.Text, HardwareNumber = ident.HardwareNumber.Text, SoftwareNumber = ident.SoftwareNumber.Text,
+                OemPartNumber = ident.OemPartNumber.Text, EngineText = ident.EngineCode.Text, FileSha256 = req.Modified.Sha256,
+            },
+            Overrides = req.Overrides, PreferredVariantId = req.PreferredVariantId, TransmissionId = req.TransmissionId,
+        });
         Step("vehicle", StepState.Done, 1, vehicle.Profile.Model.Text);
         Step("components", StepState.Done, 1, $"{req.Overrides.Count} override(s)");
 

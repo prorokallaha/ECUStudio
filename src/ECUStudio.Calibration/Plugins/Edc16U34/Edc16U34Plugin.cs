@@ -25,7 +25,8 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
     [GeneratedRegex(@"0281\d{6}")] private static partial Regex HwRegex();
     [GeneratedRegex(@"1037\d{6}")] private static partial Regex SwRegex();
     [GeneratedRegex(@"0[0-9A-Z]{2}906021[A-Z]{0,3}")] private static partial Regex OemRegex();
-    [GeneratedRegex(@"R4 ?1[,.]9L?[^\x00]{0,20}")] private static partial Regex EngineRegex();
+    /// <summary>Engine string next to the SW number, e.g. "R4 2,0L EDC G000AG" or "1,9l R4 EDC G000SG".</summary>
+    [GeneratedRegex(@"(?:R\d ?)?\d[,.]\d ?[lL](?: ?R\d)? ?(?:EDC)?[ A-Z0-9]{0,10}")] private static partial Regex EngineRegex();
 
     public DetectionResult Detect(BinaryImage image)
     {

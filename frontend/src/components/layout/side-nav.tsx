@@ -6,16 +6,18 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { useUI } from "@/stores/ui";
 import { cn } from "@/lib/cn";
 import { Tooltip } from "@/components/ui";
+import { useT } from "@/i18n";
 
 export function SideNav({ hasReport }: { hasReport: boolean }) {
   const { section, href } = useWorkspace();
   const collapsed = useUI((s) => s.navCollapsed);
   const toggle = useUI((s) => s.toggleNav);
+  const t = useT();
   let lastGroup = "";
   return (
     <nav className={cn("flex shrink-0 flex-col border-r border-border bg-bg-elev transition-[width]", collapsed ? "w-12" : "w-48")}>
       <Link href="/" className="flex h-9 items-center gap-2 px-3.5 text-xs text-fg-muted hover:text-fg border-b border-border">
-        <FolderOpen className="size-4 shrink-0" />{!collapsed && "Projects"}
+        <FolderOpen className="size-4 shrink-0" />{!collapsed && t("nav.projects")}
       </Link>
       <div className="flex-1 overflow-y-auto py-1.5">
         {NAV.map((item) => {
@@ -36,13 +38,13 @@ export function SideNav({ hasReport }: { hasReport: boolean }) {
             >
               {active && <span className="absolute -left-1.5 top-1 bottom-1 w-0.5 rounded bg-calc" />}
               <Icon className={cn("size-4 shrink-0", active && "text-calc")} />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && <span className="truncate">{t.tx(`nav.${item.section}`, item.label)}</span>}
             </Link>
           );
           return (
             <div key={item.section}>
               {sep && <div className="mx-3 my-1.5 border-t border-border" />}
-              {collapsed ? <Tooltip content={item.label} side="right">{link}</Tooltip> : link}
+              {collapsed ? <Tooltip content={t.tx(`nav.${item.section}`, item.label)} side="right">{link}</Tooltip> : link}
             </div>
           );
         })}

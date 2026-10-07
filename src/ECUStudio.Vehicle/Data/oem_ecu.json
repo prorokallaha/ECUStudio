@@ -1,0 +1,48 @@
+{
+ "_note": "OEM ECU part-number prefixes. Community-reported fitments: evidence with moderate confidence, not OEM catalogue data.",
+ "entries": [
+  {
+   "prefix": "03G906021",
+   "ecuFamily": "Bosch EDC16U34",
+   "engineCodes": [
+    "BKC",
+    "BXE",
+    "BLS",
+    "BJB",
+    "BMP",
+    "BMM"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "prefix": "03G906016",
+   "ecuFamily": "Bosch EDC16U1/U31",
+   "engineCodes": [
+    "BKC",
+    "BKD",
+    "BJB"
+   ],
+   "confidence": 0.5
+  },
+  {
+   "prefix": "03G906018",
+   "ecuFamily": "Siemens PPD1",
+   "engineCodes": [
+    "BKP",
+    "BMR",
+    "BMA"
+   ],
+   "confidence": 0.6
+  },
+  {
+   "prefix": "03L906022",
+   "ecuFamily": "Bosch EDC17",
+   "engineCodes": [
+    "CBAB",
+    "CBBB",
+    "CBDB"
+   ],
+   "confidence": 0.55
+  }
+ ]
+}

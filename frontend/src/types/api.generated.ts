@@ -1364,6 +1364,27 @@ export interface components {
         };
         /** @enum {unknown} */
         ConfidenceLevel: "Unknown" | "Low" | "LowMedium" | "Medium" | "MediumHigh" | "High";
+        ConfigurationAlternative: {
+            value: string;
+            /** Format: double */
+            probability: number;
+        };
+        ConfigurationItem: {
+            key: string;
+            group: string;
+            value?: null | string;
+            partNumber?: null | string;
+            source: string;
+            /** Format: double */
+            confidence: number;
+            evidence: string[];
+            verified: boolean;
+            alternatives: components["schemas"]["ConfigurationAlternative"][];
+            status: components["schemas"]["ConfigurationStatus"];
+            note?: null | string;
+        };
+        /** @enum {unknown} */
+        ConfigurationStatus: "Verified" | "Resolved" | "Ambiguous" | "Unknown";
         /** @enum {unknown} */
         CoolantState: "Cold" | "Normal" | "Hot";
         CreateProjectBody: {
@@ -1516,6 +1537,15 @@ export interface components {
         };
         /** @enum {unknown} */
         EvidenceType: "Map" | "Diff" | "Simulation" | "Component" | "KnowledgeBase" | "Rule" | "Log" | "Binary";
+        FactCheck: {
+            fact: components["schemas"]["VehicleFact"];
+            evidence: string;
+            variantValue: null | string;
+            match: null | boolean;
+            /** Format: double */
+            confidence: number;
+            provider: string;
+        };
         /** @enum {unknown} */
         FileRole: "Stock" | "Modified" | "Version";
         FileRoleBody: {
@@ -2055,7 +2085,21 @@ export interface components {
             /** Format: double */
             probability: number;
             reasons: string[];
+            conflicts: string[];
+            checks: components["schemas"]["FactCheck"][];
         };
+        VehicleEvidence: {
+            fact: components["schemas"]["VehicleFact"];
+            value: string;
+            /** Format: double */
+            confidence: number;
+            provider: string;
+            detail: string;
+        };
+        /** @enum {unknown} */
+        VehicleFact: "Manufacturer" | "Wmi" | "Platform" | "ModelYear" | "EcuPlugin" | "Displacement" | "Cylinders" | "EngineCode" | "EngineFamily" | "Variant" | "Transmission";
+        /** @enum {unknown} */
+        VehicleMatchStatus: "Resolved" | "Ambiguous" | "NotInDatabase" | "NoData";
         VehicleProfile: {
             make: components["schemas"]["Param"];
             model: components["schemas"]["Param"];
@@ -2075,6 +2119,11 @@ export interface components {
             vin: null | components["schemas"]["VinInfo"];
             candidates: components["schemas"]["VariantCandidate"][];
             profile: components["schemas"]["VehicleProfile"];
+            status: components["schemas"]["VehicleMatchStatus"];
+            /** Format: double */
+            unlistedProbability: number;
+            evidence: components["schemas"]["VehicleEvidence"][];
+            configuration: components["schemas"]["ConfigurationItem"][];
         };
         VehicleVariant: {
             id: string;
@@ -2121,6 +2170,7 @@ export interface components {
             region?: null | string;
             vds: string;
             platformCode?: null | string;
+            platformName?: null | string;
             /** Format: int32 */
             modelYear?: null | number;
             /** Format: char */

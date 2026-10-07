@@ -1,120 +1,709 @@
 [
-  {
-    "id": "engine_vag_19tdi_pd_77kw", "kind": "Engine", "name": "VAG 1.9 TDI PD 77 kW (BKC/BXE/BLS/BJB)",
-    "source": "OemSpec", "confidence": 0.85,
-    "note": "Unit-injector (Pumpe-Düse) diesel. No design torque limit is published; it stays UNKNOWN.",
-    "parameters": {
-      "displacement_cc": { "number": 1896, "unit": "cc", "source": "OemSpec", "confidence": 0.95 },
-      "cylinders": { "number": 4, "unit": "-", "source": "OemSpec", "confidence": 0.99 },
-      "bore_mm": { "number": 79.5, "unit": "mm", "source": "OemSpec", "confidence": 0.9 },
-      "stroke_mm": { "number": 95.5, "unit": "mm", "source": "OemSpec", "confidence": 0.9 },
-      "compression_ratio": { "number": 19.0, "unit": "-", "source": "PublicSpec", "confidence": 0.75 },
-      "rated_power_kw": { "number": 77, "unit": "kW", "source": "OemSpec", "confidence": 0.9 },
-      "rated_power_rpm": { "number": 4000, "unit": "rpm", "source": "OemSpec", "confidence": 0.85 },
-      "rated_torque_nm": { "number": 250, "unit": "Nm", "source": "OemSpec", "confidence": 0.9 },
-      "rated_torque_rpm": { "number": 1900, "unit": "rpm", "source": "OemSpec", "confidence": 0.85 },
-      "injection_system": { "text": "Pumpe-Düse unit injectors", "source": "OemSpec", "confidence": 0.95 },
-      "max_design_torque_nm": { "unit": "Nm", "source": "Unknown", "confidence": 0, "note": "No published figure" }
-    }
-  },
-  {
-    "id": "turbo_oem_pd77", "kind": "Turbo", "name": "OEM VNT turbocharger (1.9 TDI PD 77 kW)",
-    "source": "VariantTypical", "confidence": 0.5,
-    "note": "Exact part depends on vehicle/build; verify the label on the turbo.",
-    "parameters": {
-      "model": { "text": "Garrett GT1646V (reported fitment)", "source": "VariantTypical", "confidence": 0.4 },
-      "max_pressure_ratio": { "unit": "-", "source": "Unknown", "confidence": 0, "note": "Compressor map not available" },
-      "max_corrected_flow_kg_s": { "unit": "kg/s", "source": "Unknown", "confidence": 0 },
-      "max_turbine_inlet_temp_c": { "unit": "°C", "source": "Unknown", "confidence": 0 },
-      "max_shaft_speed_rpm": { "unit": "rpm", "source": "Unknown", "confidence": 0 }
-    }
-  },
-  {
-    "id": "turbo_gt1749vb", "kind": "Turbo", "name": "Garrett GT1749VB (VNT)", "source": "Database", "confidence": 0.6,
-    "parameters": {
-      "model": { "text": "Garrett GT1749VB", "source": "Database", "confidence": 0.8 },
-      "max_pressure_ratio": { "unit": "-", "source": "Unknown", "confidence": 0 },
-      "max_corrected_flow_kg_s": { "unit": "kg/s", "source": "Unknown", "confidence": 0 },
-      "max_turbine_inlet_temp_c": { "unit": "°C", "source": "Unknown", "confidence": 0 }
-    }
-  },
-  {
-    "id": "turbo_gtb1756vk", "kind": "Turbo", "name": "Garrett GTB1756VK (VNT)", "source": "Database", "confidence": 0.6,
-    "parameters": {
-      "model": { "text": "Garrett GTB1756VK", "source": "Database", "confidence": 0.8 },
-      "max_pressure_ratio": { "unit": "-", "source": "Unknown", "confidence": 0 },
-      "max_corrected_flow_kg_s": { "unit": "kg/s", "source": "Unknown", "confidence": 0 },
-      "max_turbine_inlet_temp_c": { "unit": "°C", "source": "Unknown", "confidence": 0 }
-    }
-  },
-  {
-    "id": "injectors_pd_oem_77kw", "kind": "Injectors", "name": "PD unit injectors (OEM, 77 kW nozzles)", "source": "VariantTypical", "confidence": 0.6,
-    "parameters": {
-      "max_injection_pressure_bar": { "number": 2050, "unit": "bar", "source": "PublicSpec", "confidence": 0.7, "note": "System peak pressure, not a per-nozzle delivery rating" },
-      "max_delivery_mg": { "unit": "mg/stroke", "source": "Unknown", "confidence": 0, "note": "Nozzle flow rating not available" },
-      "max_injection_duration_deg_ca": { "unit": "°CA", "source": "Unknown", "confidence": 0 }
-    }
-  },
-  {
-    "id": "fuel_pd_tandem", "kind": "FuelSystem", "name": "Tandem pump + PD unit injectors", "source": "OemSpec", "confidence": 0.85,
-    "parameters": {
-      "max_rail_pressure_bar": { "unit": "bar", "source": "OemSpec", "confidence": 1, "note": "Not applicable: no common rail" },
-      "pump_max_delivery_mg": { "unit": "mg/stroke", "source": "Unknown", "confidence": 0 }
-    }
-  },
-  {
-    "id": "trans_manual_5spd_pq35", "kind": "Transmission", "name": "5-speed manual (PQ35 platform)", "source": "VariantTypical", "confidence": 0.5,
-    "parameters": {
-      "gears": { "number": 5, "unit": "-", "source": "VariantTypical", "confidence": 0.7 },
-      "rated_input_torque_nm": { "unit": "Nm", "source": "Unknown", "confidence": 0, "note": "Exact gearbox code unknown" }
-    }
-  },
-  {
-    "id": "trans_dsg_dq250", "kind": "Transmission", "name": "DSG DQ250 (02E) 6-speed wet dual-clutch", "source": "PublicSpec", "confidence": 0.6,
-    "parameters": {
-      "gears": { "number": 6, "unit": "-", "source": "OemSpec", "confidence": 0.95 },
-      "rated_input_torque_nm": { "number": 350, "unit": "Nm", "source": "PublicSpec", "confidence": 0.6, "note": "Commonly cited input torque rating; differs by revision and TCU software" }
-    }
-  },
-  {
-    "id": "clutch_oem_pd77", "kind": "Clutch", "name": "OEM clutch / dual-mass flywheel", "source": "VariantTypical", "confidence": 0.4,
-    "parameters": {
-      "rated_input_torque_nm": { "unit": "Nm", "source": "Unknown", "confidence": 0, "note": "Clutch rating not available" }
-    }
-  },
-  {
-    "id": "clutch_dsg_integrated", "kind": "Clutch", "name": "DSG integrated wet clutches", "source": "OemSpec", "confidence": 0.8,
-    "parameters": {
-      "rated_input_torque_nm": { "unit": "Nm", "source": "Unknown", "confidence": 0, "note": "Covered by transmission rating" }
-    }
-  },
-  {
-    "id": "ic_oem_air_air", "kind": "Intercooler", "name": "OEM air-to-air intercooler", "source": "VariantTypical", "confidence": 0.6,
-    "parameters": {}
-  },
-  {
-    "id": "sensors_pd_maf_map", "kind": "Sensors", "name": "MAF + MAP (no lambda sensor)", "source": "VariantTypical", "confidence": 0.6,
-    "parameters": {
-      "maf": { "text": "Hot-film MAF", "source": "VariantTypical", "confidence": 0.8 },
-      "map": { "text": "Boost pressure + intake temperature sensor", "source": "VariantTypical", "confidence": 0.8 },
-      "lambda": { "text": "None", "source": "VariantTypical", "confidence": 0.6 },
-      "egt": { "text": "None", "source": "VariantTypical", "confidence": 0.5 }
-    }
-  },
-  {
-    "id": "sensors_pd_dpf", "kind": "Sensors", "name": "MAF + MAP + DPF EGT/differential pressure", "source": "VariantTypical", "confidence": 0.55,
-    "parameters": {
-      "maf": { "text": "Hot-film MAF", "source": "VariantTypical", "confidence": 0.8 },
-      "map": { "text": "Boost pressure + intake temperature sensor", "source": "VariantTypical", "confidence": 0.8 },
-      "egt": { "text": "EGT sensors for DPF", "source": "VariantTypical", "confidence": 0.55 }
-    }
-  },
-  {
-    "id": "emis_eu4_egr", "kind": "Emissions", "name": "Euro 4, EGR, oxidation catalyst", "source": "VariantTypical", "confidence": 0.6,
-    "parameters": { "egr": { "text": "Yes", "source": "VariantTypical", "confidence": 0.8 }, "dpf": { "text": "No", "source": "VariantTypical", "confidence": 0.6 } }
-  },
-  {
-    "id": "emis_eu4_egr_dpf", "kind": "Emissions", "name": "Euro 4, EGR, DPF", "source": "VariantTypical", "confidence": 0.6,
-    "parameters": { "egr": { "text": "Yes", "source": "VariantTypical", "confidence": 0.8 }, "dpf": { "text": "Yes", "source": "VariantTypical", "confidence": 0.75 } }
+ {
+  "id": "engine_vag_19tdi_pd_77kw",
+  "kind": "Engine",
+  "name": "VAG 1.9 TDI PD 77 kW (BKC/BXE/BLS/BJB)",
+  "source": "OemSpec",
+  "confidence": 0.85,
+  "note": "Unit-injector (Pumpe-Düse) diesel. No design torque limit is published; it stays UNKNOWN.",
+  "parameters": {
+   "displacement_cc": {
+    "number": 1896,
+    "unit": "cc",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "cylinders": {
+    "number": 4,
+    "unit": "-",
+    "source": "OemSpec",
+    "confidence": 0.99
+   },
+   "bore_mm": {
+    "number": 79.5,
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.9
+   },
+   "stroke_mm": {
+    "number": 95.5,
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.9
+   },
+   "compression_ratio": {
+    "number": 19.0,
+    "unit": "-",
+    "source": "PublicSpec",
+    "confidence": 0.75
+   },
+   "rated_power_kw": {
+    "number": 77,
+    "unit": "kW",
+    "source": "OemSpec",
+    "confidence": 0.9
+   },
+   "rated_power_rpm": {
+    "number": 4000,
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.85
+   },
+   "rated_torque_nm": {
+    "number": 250,
+    "unit": "Nm",
+    "source": "OemSpec",
+    "confidence": 0.9
+   },
+   "rated_torque_rpm": {
+    "number": 1900,
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.85
+   },
+   "injection_system": {
+    "text": "Pumpe-Düse unit injectors",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "max_design_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "No published figure"
+   }
   }
+ },
+ {
+  "id": "turbo_oem_pd77",
+  "kind": "Turbo",
+  "name": "OEM VNT turbocharger (1.9 TDI PD 77 kW)",
+  "source": "VariantTypical",
+  "confidence": 0.5,
+  "note": "Exact part depends on vehicle/build; verify the label on the turbo.",
+  "parameters": {
+   "model": {
+    "text": "Garrett GT1646V (reported fitment)",
+    "source": "VariantTypical",
+    "confidence": 0.4
+   },
+   "max_pressure_ratio": {
+    "unit": "-",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Compressor map not available"
+   },
+   "max_corrected_flow_kg_s": {
+    "unit": "kg/s",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_turbine_inlet_temp_c": {
+    "unit": "°C",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_shaft_speed_rpm": {
+    "unit": "rpm",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "turbo_gt1749vb",
+  "kind": "Turbo",
+  "name": "Garrett GT1749VB (VNT)",
+  "source": "Database",
+  "confidence": 0.6,
+  "parameters": {
+   "model": {
+    "text": "Garrett GT1749VB",
+    "source": "Database",
+    "confidence": 0.8
+   },
+   "max_pressure_ratio": {
+    "unit": "-",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_corrected_flow_kg_s": {
+    "unit": "kg/s",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_turbine_inlet_temp_c": {
+    "unit": "°C",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "turbo_gtb1756vk",
+  "kind": "Turbo",
+  "name": "Garrett GTB1756VK (VNT)",
+  "source": "Database",
+  "confidence": 0.6,
+  "parameters": {
+   "model": {
+    "text": "Garrett GTB1756VK",
+    "source": "Database",
+    "confidence": 0.8
+   },
+   "max_pressure_ratio": {
+    "unit": "-",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_corrected_flow_kg_s": {
+    "unit": "kg/s",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_turbine_inlet_temp_c": {
+    "unit": "°C",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "injectors_pd_oem_77kw",
+  "kind": "Injectors",
+  "name": "PD unit injectors (OEM, 77 kW nozzles)",
+  "source": "VariantTypical",
+  "confidence": 0.6,
+  "parameters": {
+   "max_injection_pressure_bar": {
+    "number": 2050,
+    "unit": "bar",
+    "source": "PublicSpec",
+    "confidence": 0.7,
+    "note": "System peak pressure, not a per-nozzle delivery rating"
+   },
+   "max_delivery_mg": {
+    "unit": "mg/stroke",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Nozzle flow rating not available"
+   },
+   "max_injection_duration_deg_ca": {
+    "unit": "°CA",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "fuel_pd_tandem",
+  "kind": "FuelSystem",
+  "name": "Tandem pump + PD unit injectors",
+  "source": "OemSpec",
+  "confidence": 0.85,
+  "parameters": {
+   "max_rail_pressure_bar": {
+    "unit": "bar",
+    "source": "OemSpec",
+    "confidence": 1,
+    "note": "Not applicable: no common rail"
+   },
+   "pump_max_delivery_mg": {
+    "unit": "mg/stroke",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "trans_manual_5spd_pq35",
+  "kind": "Transmission",
+  "name": "5-speed manual (PQ35 platform)",
+  "source": "VariantTypical",
+  "confidence": 0.5,
+  "parameters": {
+   "gears": {
+    "number": 5,
+    "unit": "-",
+    "source": "VariantTypical",
+    "confidence": 0.7
+   },
+   "rated_input_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Exact gearbox code unknown"
+   }
+  }
+ },
+ {
+  "id": "trans_dsg_dq250",
+  "kind": "Transmission",
+  "name": "DSG DQ250 (02E) 6-speed wet dual-clutch",
+  "source": "PublicSpec",
+  "confidence": 0.6,
+  "parameters": {
+   "gears": {
+    "number": 6,
+    "unit": "-",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "rated_input_torque_nm": {
+    "number": 350,
+    "unit": "Nm",
+    "source": "PublicSpec",
+    "confidence": 0.6,
+    "note": "Commonly cited input torque rating; differs by revision and TCU software"
+   }
+  }
+ },
+ {
+  "id": "clutch_oem_pd77",
+  "kind": "Clutch",
+  "name": "OEM clutch / dual-mass flywheel",
+  "source": "VariantTypical",
+  "confidence": 0.4,
+  "parameters": {
+   "rated_input_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Clutch rating not available"
+   }
+  }
+ },
+ {
+  "id": "clutch_dsg_integrated",
+  "kind": "Clutch",
+  "name": "DSG integrated wet clutches",
+  "source": "OemSpec",
+  "confidence": 0.8,
+  "parameters": {
+   "rated_input_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Covered by transmission rating"
+   }
+  }
+ },
+ {
+  "id": "ic_oem_air_air",
+  "kind": "Intercooler",
+  "name": "OEM air-to-air intercooler",
+  "source": "VariantTypical",
+  "confidence": 0.6,
+  "parameters": {}
+ },
+ {
+  "id": "sensors_pd_maf_map",
+  "kind": "Sensors",
+  "name": "MAF + MAP (no lambda sensor)",
+  "source": "VariantTypical",
+  "confidence": 0.6,
+  "parameters": {
+   "maf": {
+    "text": "Hot-film MAF",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "map": {
+    "text": "Boost pressure + intake temperature sensor",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "lambda": {
+    "text": "None",
+    "source": "VariantTypical",
+    "confidence": 0.6
+   },
+   "egt": {
+    "text": "None",
+    "source": "VariantTypical",
+    "confidence": 0.5
+   }
+  }
+ },
+ {
+  "id": "sensors_pd_dpf",
+  "kind": "Sensors",
+  "name": "MAF + MAP + DPF EGT/differential pressure",
+  "source": "VariantTypical",
+  "confidence": 0.55,
+  "parameters": {
+   "maf": {
+    "text": "Hot-film MAF",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "map": {
+    "text": "Boost pressure + intake temperature sensor",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "egt": {
+    "text": "EGT sensors for DPF",
+    "source": "VariantTypical",
+    "confidence": 0.55
+   }
+  }
+ },
+ {
+  "id": "emis_eu4_egr",
+  "kind": "Emissions",
+  "name": "Euro 4, EGR, oxidation catalyst",
+  "source": "VariantTypical",
+  "confidence": 0.6,
+  "parameters": {
+   "egr": {
+    "text": "Yes",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "dpf": {
+    "text": "No",
+    "source": "VariantTypical",
+    "confidence": 0.6
+   }
+  }
+ },
+ {
+  "id": "emis_eu4_egr_dpf",
+  "kind": "Emissions",
+  "name": "Euro 4, EGR, DPF",
+  "source": "VariantTypical",
+  "confidence": 0.6,
+  "parameters": {
+   "egr": {
+    "text": "Yes",
+    "source": "VariantTypical",
+    "confidence": 0.8
+   },
+   "dpf": {
+    "text": "Yes",
+    "source": "VariantTypical",
+    "confidence": 0.75
+   }
+  }
+ },
+ {
+  "id": "engine_vag_20tdi_pd_103kw",
+  "kind": "Engine",
+  "name": "VAG 2.0 TDI PD 103 kW (BMP/BKP)",
+  "source": "OemSpec",
+  "confidence": 0.8,
+  "note": "Unit-injector diesel. BMP (8V) is reported with Bosch EDC16U34, BKP (16V) with Siemens PPD1; verify the engine code label.",
+  "parameters": {
+   "displacement_cc": {
+    "unit": "cc",
+    "source": "OemSpec",
+    "confidence": 0.95,
+    "number": 1968
+   },
+   "cylinders": {
+    "unit": "-",
+    "source": "OemSpec",
+    "confidence": 0.99,
+    "number": 4
+   },
+   "bore_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 81.0
+   },
+   "stroke_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 95.5
+   },
+   "compression_ratio": {
+    "unit": "-",
+    "source": "PublicSpec",
+    "confidence": 0.6,
+    "number": 18.5
+   },
+   "rated_power_kw": {
+    "unit": "kW",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 103
+   },
+   "rated_power_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.8,
+    "number": 4000
+   },
+   "rated_torque_nm": {
+    "unit": "Nm",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 320
+   },
+   "rated_torque_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.75,
+    "number": 1750
+   },
+   "injection_system": {
+    "text": "Pumpe-Düse unit injectors",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "max_design_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "No published figure"
+   }
+  }
+ },
+ {
+  "id": "engine_vag_20tdi_pd_125kw",
+  "kind": "Engine",
+  "name": "VAG 2.0 TDI PD 125 kW (BMR)",
+  "source": "OemSpec",
+  "confidence": 0.8,
+  "note": "Reported with Siemens PPD1.5 ECU.",
+  "parameters": {
+   "displacement_cc": {
+    "unit": "cc",
+    "source": "OemSpec",
+    "confidence": 0.95,
+    "number": 1968
+   },
+   "cylinders": {
+    "unit": "-",
+    "source": "OemSpec",
+    "confidence": 0.99,
+    "number": 4
+   },
+   "bore_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 81.0
+   },
+   "stroke_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 95.5
+   },
+   "compression_ratio": {
+    "unit": "-",
+    "source": "PublicSpec",
+    "confidence": 0.6,
+    "number": 18.0
+   },
+   "rated_power_kw": {
+    "unit": "kW",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 125
+   },
+   "rated_power_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.8,
+    "number": 4200
+   },
+   "rated_torque_nm": {
+    "unit": "Nm",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 350
+   },
+   "rated_torque_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.75,
+    "number": 1800
+   },
+   "injection_system": {
+    "text": "Pumpe-Düse unit injectors (piezo)",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "max_design_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "No published figure"
+   }
+  }
+ },
+ {
+  "id": "engine_vag_20tdi_cr_103kw",
+  "kind": "Engine",
+  "name": "VAG 2.0 TDI CR 103 kW (CBAB)",
+  "source": "OemSpec",
+  "confidence": 0.8,
+  "note": "Common-rail successor of the PD engines, reported with Bosch EDC17.",
+  "parameters": {
+   "displacement_cc": {
+    "unit": "cc",
+    "source": "OemSpec",
+    "confidence": 0.95,
+    "number": 1968
+   },
+   "cylinders": {
+    "unit": "-",
+    "source": "OemSpec",
+    "confidence": 0.99,
+    "number": 4
+   },
+   "bore_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 81.0
+   },
+   "stroke_mm": {
+    "unit": "mm",
+    "source": "OemSpec",
+    "confidence": 0.85,
+    "number": 95.5
+   },
+   "compression_ratio": {
+    "unit": "-",
+    "source": "PublicSpec",
+    "confidence": 0.6,
+    "number": 16.5
+   },
+   "rated_power_kw": {
+    "unit": "kW",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 103
+   },
+   "rated_power_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.8,
+    "number": 4200
+   },
+   "rated_torque_nm": {
+    "unit": "Nm",
+    "source": "OemSpec",
+    "confidence": 0.9,
+    "number": 320
+   },
+   "rated_torque_rpm": {
+    "unit": "rpm",
+    "source": "OemSpec",
+    "confidence": 0.75,
+    "number": 1750
+   },
+   "injection_system": {
+    "text": "Common rail",
+    "source": "OemSpec",
+    "confidence": 0.95
+   },
+   "max_design_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "No published figure"
+   }
+  }
+ },
+ {
+  "id": "turbo_oem_20tdi",
+  "kind": "Turbo",
+  "name": "OEM VNT turbocharger (2.0 TDI)",
+  "source": "VariantTypical",
+  "confidence": 0.35,
+  "note": "Several turbo part numbers were fitted to 2.0 TDI engines; the exact unit is not derivable from VIN or ECU. Verify the label.",
+  "parameters": {
+   "model": {
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Part number requires verification"
+   },
+   "max_pressure_ratio": {
+    "unit": "-",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Compressor map not available"
+   },
+   "max_corrected_flow_kg_s": {
+    "unit": "kg/s",
+    "source": "Unknown",
+    "confidence": 0
+   },
+   "max_turbine_inlet_temp_c": {
+    "unit": "°C",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "injectors_pd_oem_103kw",
+  "kind": "Injectors",
+  "name": "PD unit injectors (OEM, 2.0 TDI)",
+  "source": "VariantTypical",
+  "confidence": 0.5,
+  "parameters": {
+   "max_injection_pressure_bar": {
+    "number": 2050,
+    "unit": "bar",
+    "source": "PublicSpec",
+    "confidence": 0.6,
+    "note": "System peak pressure, not a per-nozzle delivery rating"
+   },
+   "max_delivery_mg": {
+    "unit": "mg/stroke",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Nozzle flow rating not available"
+   },
+   "max_injection_duration_deg_ca": {
+    "unit": "°CA",
+    "source": "Unknown",
+    "confidence": 0
+   }
+  }
+ },
+ {
+  "id": "trans_manual_6spd_pq46",
+  "kind": "Transmission",
+  "name": "6-speed manual (PQ46 platform)",
+  "source": "VariantTypical",
+  "confidence": 0.45,
+  "parameters": {
+   "gears": {
+    "number": 6,
+    "unit": "-",
+    "source": "VariantTypical",
+    "confidence": 0.6
+   },
+   "rated_input_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Exact gearbox code unknown"
+   }
+  }
+ },
+ {
+  "id": "clutch_oem_dmf",
+  "kind": "Clutch",
+  "name": "OEM clutch with dual-mass flywheel",
+  "source": "VariantTypical",
+  "confidence": 0.4,
+  "parameters": {
+   "rated_input_torque_nm": {
+    "unit": "Nm",
+    "source": "Unknown",
+    "confidence": 0,
+    "note": "Clutch rating not available"
+   }
+  }
+ }
 ]
