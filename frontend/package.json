@@ -1,0 +1,40 @@
+{
+  "name": "ecustudio-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "gen:api": "openapi-typescript http://localhost:5080/api/openapi/v1.json -o src/types/api.generated.ts && node scripts/clean-api-types.mjs",
+    "export:desktop": "next build && node scripts/copy-to-wwwroot.mjs"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-table": "^8",
+    "@tanstack/react-virtual": "^3",
+    "@xyflow/react": "^12",
+    "clsx": "^2",
+    "cmdk": "^1",
+    "echarts": "^6",
+    "echarts-gl": "^2.1.0",
+    "lucide-react": "*",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-resizable-panels": "^3",
+    "sonner": "^2",
+    "tailwind-merge": "^3",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "openapi-typescript": "^7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,112 @@
+using ECUStudio.Binary;
+using ECUStudio.Calibration.Model;
+using ECUStudio.Calibration.Scanning;
+using ECUStudio.Core;
+
+namespace ECUStudio.Calibration.Plugins;
+
+public sealed record DetectionResult(string PluginId, double Score, IReadOnlyList<string> Reasons);
+
+public sealed record EcuIdentification
+{
+    public required string PluginId { get; init; }
+    public required string EcuFamily { get; init; }
+    public string Manufacturer { get; init; } = "Unknown";
+    public Param BoschNumber { get; init; } = Param.Unknown();
+    public Param OemPartNumber { get; init; } = Param.Unknown();
+    public Param HardwareNumber { get; init; } = Param.Unknown();
+    public Param SoftwareNumber { get; init; } = Param.Unknown();
+    public Param SoftwareVersion { get; init; } = Param.Unknown();
+    /// <summary>VAG hardware part number when the ID block lists it next to the software part number.</summary>
+    public Param OemHardwarePartNumber { get; init; } = Param.Unknown();
+    /// <summary>Bosch project code from the SW string (e.g. "HAXE" in "1037382425P447HAXE"); one project covers many SW versions.</summary>
+    public Param ProjectCode { get; init; } = Param.Unknown();
+    public Param EngineCode { get; init; } = Param.Unknown();
+    public string Processor { get; init; } = "Unknown";
+    public Endianness Endianness { get; init; }
+    public int FlashSize { get; init; }
+    public IReadOnlyList<MemorySection> Sections { get; init; } = [];
+    public double Confidence { get; init; }
+    public IReadOnlyList<string> Notes { get; init; } = [];
+}
+
+/// <summary>Result of resolving map definitions for one binary.</summary>
+public sealed record DefinitionResolution(
+    IReadOnlyList<MapDefinition> Definitions,
+    IReadOnlyList<MapCandidate> Candidates,
+    string Source,
+    IReadOnlyList<string> Notes)
+{
+    /// <summary><see cref="Source"/> when no definition was found and maps come from structure scanning only.</summary>
+    public const string ScanOnly = "Signature scan only";
+
+    /// <summary>Checksum blocks described by the resolved definition (empty when none are known).</summary>
+    public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
+}
+
+/// <summary>
+/// ECU family plugin. The core (calibration analysis, simulation, risk) only talks to this
+/// interface, so new families (EDC15/17, MED17, MD1, MG1, SID, Delphi, Marelli) plug in
+/// without changes to the simulation core.
+/// </summary>
+/// <summary>Checksum handling of one ECU family. Only blocks a definition describes are verified or corrected.</summary>
+public interface IChecksumProvider
+{
+    /// <summary>
+    /// Recalculates the described blocks in <paramref name="data"/> in place. Returns Unsupported (and changes nothing)
+    /// when no blocks are known: such a file must never be presented as safe to write.
+    /// </summary>
+    ChecksumReport CorrectChecksums(Span<byte> data, IReadOnlyList<ChecksumSpec> blocks);
+}
+
+public interface IEcuPlugin : IChecksumProvider
+{
+    string PluginId { get; }
+    string DisplayName { get; }
+    /// <summary>Engine families this plugin's physics defaults apply to (e.g. "VAG_PD_19").</summary>
+    IReadOnlyList<string> EngineFamilies { get; }
+    /// <summary>True when the injection system has a common rail (rail pressure applicable).</summary>
+    bool HasCommonRail { get; }
+
+    DetectionResult Detect(BinaryImage image);
+    EcuIdentification Identify(BinaryImage image);
+    DefinitionResolution ResolveDefinitions(BinaryImage image, EcuIdentification identification, ExternalDefinition? external);
+    /// <summary>Verifies the checksum blocks a definition describes; never guesses undescribed ones.</summary>
+    ChecksumReport VerifyChecksums(BinaryImage image, IReadOnlyList<ChecksumSpec> blocks);
+}
+
+/// <summary>A user-supplied definition (XDF, DAMOS, A2L, OLS export, native JSON).</summary>
+public sealed record ExternalDefinition(SourceType Source, IReadOnlyList<MapDefinition> Maps, string Name)
+{
+    /// <summary>Importer remarks (skipped objects, rebasing) surfaced in the definition resolution.</summary>
+    public IReadOnlyList<string> Notes { get; init; } = [];
+    /// <summary>Checksum blocks described by the definition file (native JSON only).</summary>
+    public IReadOnlyList<ChecksumSpec> Checksums { get; init; } = [];
+    /// <summary>Shared axis objects declared by the definition (A2L AXIS_PTS).</summary>
+    public int AxisCount { get; init; }
+    /// <summary>EPROM identifier the definition was made for (A2L MOD_PAR EPK) and its file offset (ADDR_EPK, rebased).</summary>
+    public string? Epk { get; init; }
+    public int? EpkAddress { get; init; }
+}
+
+public sealed class PluginRegistry
+{
+    private readonly List<IEcuPlugin> _plugins;
+
+    public PluginRegistry(IEnumerable<IEcuPlugin> plugins) => _plugins = plugins.ToList();
+
+    public IReadOnlyList<IEcuPlugin> Plugins => _plugins;
+
+    public IEcuPlugin? Get(string id) => _plugins.FirstOrDefault(p => p.PluginId.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+    public (IEcuPlugin Plugin, DetectionResult Detection) Detect(BinaryImage image, double minScore = 0.3)
+    {
+        var results = _plugins.Select(p => (Plugin: p, Detection: p.Detect(image))).OrderByDescending(r => r.Detection.Score).ToList();
+        if (results.Count == 0 || results[0].Detection.Score < minScore)
+        {
+            var reasons = results.SelectMany(r => r.Detection.Reasons.Select(x => $"{r.Plugin.PluginId}: {x}")).ToList();
+            throw new UnsupportedEcuException("No ECU plugin recognised this binary. " + string.Join("; ", reasons));
+        }
+        return results[0];
+    }
+}

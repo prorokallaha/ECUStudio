@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ECUStudio.Core\ECUStudio.Core.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Binary\ECUStudio.Binary.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Calibration\ECUStudio.Calibration.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Vehicle\ECUStudio.Vehicle.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Components\ECUStudio.Components.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Simulation\ECUStudio.Simulation.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Risk\ECUStudio.Risk.csproj" />
+    <ProjectReference Include="..\..\src\ECUStudio.Application\ECUStudio.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+</Project>

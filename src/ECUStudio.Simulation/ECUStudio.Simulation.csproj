@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECUStudio.Core\ECUStudio.Core.csproj" />
+    <ProjectReference Include="..\ECUStudio.Calibration\ECUStudio.Calibration.csproj" />
+    <ProjectReference Include="..\ECUStudio.Vehicle\ECUStudio.Vehicle.csproj" />
+    <ProjectReference Include="..\ECUStudio.Components\ECUStudio.Components.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+</Project>
