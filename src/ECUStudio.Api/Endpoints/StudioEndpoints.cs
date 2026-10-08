@@ -130,17 +130,17 @@ public static class StudioEndpoints
         lib.MapGet("/roots", (StudioService s) => s.Library.Roots());
         lib.MapPost("/roots", (AddLibraryRootBody b, StudioService s) => Results.Created("/api/v1/library/roots", s.Library.AddDirectory(b.Path, b.Name)));
         // A torrent source is indexed once, right after it is added (file list only; nothing is downloaded).
-        lib.MapPost("/torrents", async (IFormFile file, [FromForm] string? downloadPath, StudioService s, ILoggerFactory logs, CancellationToken ct) =>
+        lib.MapPost("/torrents", async (IFormFile file, [FromForm] string? downloadPath, StudioService s, DefinitionAcquisitionService acq, ILoggerFactory logs, CancellationToken ct) =>
         {
             if (file.Length > TorrentMetadata.MaxTorrentBytes) throw new DefinitionException(".torrent file is larger than 256 MB");
             var root = s.Library.AddTorrent(Path.GetFileName(file.FileName), await ReadUpload(file, ct), downloadPath);
-            StartScan(s, root.Id, logs);
+            StartScan(s, acq, root.Id, logs);
             return Results.Created("/api/v1/library/roots", root);
         }).DisableAntiforgery();
-        lib.MapPost("/torrents/path", (AddTorrentPathBody b, StudioService s, ILoggerFactory logs) =>
+        lib.MapPost("/torrents/path", (AddTorrentPathBody b, StudioService s, DefinitionAcquisitionService acq, ILoggerFactory logs) =>
         {
             var root = s.Library.AddTorrentFile(b.Path, b.DownloadPath);
-            StartScan(s, root.Id, logs);
+            StartScan(s, acq, root.Id, logs);
             return Results.Created("/api/v1/library/roots", root);
         });
         lib.MapPost("/torrents/magnet", (AddMagnetBody b, StudioService s) =>
@@ -152,10 +152,10 @@ public static class StudioEndpoints
         lib.MapPatch("/torrents/{rootId:guid}", (Guid rootId, TorrentSourceOptionsBody b, StudioService s) => s.Library.SetSourceOptions(rootId, b.Enabled, b.Priority));
         lib.MapPatch("/roots/{rootId:guid}", (Guid rootId, UpdateLibraryRootBody b, StudioService s) => s.Library.UpdateRoot(rootId, b.Name, b.DownloadPath));
         lib.MapDelete("/roots/{rootId:guid}", (Guid rootId, StudioService s) => { s.Library.RemoveRoot(rootId); return Results.NoContent(); });
-        lib.MapPost("/roots/{rootId:guid}/scan", (Guid rootId, StudioService s, ILoggerFactory logs) =>
+        lib.MapPost("/roots/{rootId:guid}/scan", (Guid rootId, StudioService s, DefinitionAcquisitionService acq, ILoggerFactory logs) =>
         {
             if (s.Library.IsScanning(rootId)) throw new EcuStudioException("LIBRARY_BUSY", "This library location is already being scanned", 409);
-            StartScan(s, rootId, logs);
+            StartScan(s, acq, rootId, logs);
             return Results.Accepted();
         });
 
@@ -223,14 +223,21 @@ public static class StudioEndpoints
         return api;
     }
 
-    private static void StartScan(StudioService s, Guid rootId, ILoggerFactory logs)
+    /// <summary>Indexes a source in the background, then repeats the definition search of projects still without one.</summary>
+    private static void StartScan(StudioService s, DefinitionAcquisitionService acq, Guid rootId, ILoggerFactory logs)
     {
         if (s.Library.IsScanning(rootId)) return;
         var log = logs.CreateLogger("ECUStudio.Library");
-        _ = Task.Run(() =>
+        _ = Task.Run(async () =>
         {
             try { s.Library.Scan(rootId); }
-            catch (Exception ex) { log.LogWarning(ex, "Library scan of {RootId} failed", rootId); }
+            catch (Exception ex) { log.LogWarning(ex, "Library scan of {RootId} failed", rootId); return; }
+            try
+            {
+                var n = await acq.ResumeAfterLibraryChangeAsync();
+                if (n > 0) log.LogInformation("Definition search restarted for {Count} project(s) after indexing {RootId}", n, rootId);
+            }
+            catch (Exception ex) { log.LogWarning(ex, "Definition search after indexing {RootId} failed", rootId); }
         });
     }
 

@@ -20,6 +20,8 @@ export interface ToolbarProps {
   onRevert: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  /** Right-hand slot (save as a new file). */
+  extra?: ReactNode;
 }
 
 /** Parses the operand box: "12" set, "+5" add, "+-5" add −5, "*1.1" or "x1.1" multiply, "5%" percent, "=−5" set. */
@@ -74,6 +76,7 @@ export const MapEditToolbar = memo(forwardRef<HTMLInputElement, ToolbarProps & {
         {p.busy && <Spinner className="size-3" />}
         {t("mapEditor.selected", { n: p.count })}
       </span>
+      {p.extra}
     </div>
   );
 }));

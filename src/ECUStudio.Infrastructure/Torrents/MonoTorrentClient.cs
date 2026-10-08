@@ -17,6 +17,8 @@ public sealed record MonoTorrentOptions
     /// <summary>0: any free port.</summary>
     public int ListenPort { get; init; }
     public bool UseDht { get; init; } = true;
+    /// <summary>UPnP/NAT-PMP port mapping on the router, so peers behind NAT can connect back.</summary>
+    public bool PortForwarding { get; init; } = true;
     /// <summary>Peers added directly (LAN mirror, tests). Trackers and DHT are still used.</summary>
     public IReadOnlyList<IPEndPoint> ExtraPeers { get; init; } = [];
     /// <summary>A transfer that receives no data for this long fails (the next candidate is tried).</summary>
@@ -52,7 +54,7 @@ public sealed class MonoTorrentClient : ITorrentClient, IAsyncDisposable
         var builder = new EngineSettingsBuilder
         {
             CacheDirectory = state,
-            AllowPortForwarding = false,
+            AllowPortForwarding = _options.PortForwarding,
             AutoSaveLoadFastResume = false,
             AutoSaveLoadMagnetLinkMetadata = false,
             MaximumUploadRate = _options.MaxUploadBytesPerSecond,
@@ -128,7 +130,9 @@ public sealed class MonoTorrentClient : ITorrentClient, IAsyncDisposable
                 var done = selected.Sum(f => (long)(f.BitField.PercentComplete / 100.0 * f.Length));
                 if (done != lastDone) { lastDone = done; lastData = DateTime.UtcNow; }
                 else if (DateTime.UtcNow - lastData > _options.StallTimeout)
-                    throw new TimeoutException($"No data received for {(int)_options.StallTimeout.TotalMinutes} min ({manager.Peers.Available} peers known)");
+                    throw new TimeoutException(done == 0
+                        ? $"no data for {(int)_options.StallTimeout.TotalMinutes} min: {manager.Peers.Available} peer(s) known, {manager.OpenConnections} connected"
+                        : $"transfer stalled at {100 * done / Math.Max(1, total)} % for {(int)_options.StallTimeout.TotalMinutes} min ({manager.OpenConnections} connected)");
                 var phase = manager.State == TorrentState.Metadata ? TransferPhase.Metadata
                     : manager.OpenConnections == 0 && done == 0 ? TransferPhase.Connecting : TransferPhase.Downloading;
                 progress?.Report(new TorrentTransferProgress(phase, done, total, manager.Monitor.DownloadRate, manager.OpenConnections, manager.Peers.Seeds));

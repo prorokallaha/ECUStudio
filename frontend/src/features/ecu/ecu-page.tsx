@@ -4,8 +4,10 @@ import { PageHeader, WithReport } from "@/components/layout/page";
 import { Badge, Card, CardBody, CardHeader, ConfidenceBadge, SourceBadge } from "@/components/ui";
 import { MemoryMap } from "@/components/binary/memory-map";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useProject } from "@/hooks/use-analysis";
 import { fmtBytes, fmtParam, hex } from "@/lib/format";
-import { DefinitionBindingCard, DefinitionMatchesCard } from "@/features/library/definition-cards";
+import { DefinitionBindingCard } from "@/features/library/definition-cards";
+import { AcquisitionCard } from "@/components/layout/definition-status";
 import { useT } from "@/i18n";
 
 export function EcuPage() {
@@ -14,7 +16,8 @@ export function EcuPage() {
 
 function Ecu({ r }: { r: AnalysisReport }) {
   const t = useT();
-  const { router, href, projectId, analysisId } = useWorkspace();
+  const { router, href, projectId } = useWorkspace();
+  const project = useProject(projectId);
   const e = r.ecu;
   const rows: [string, Param | string][] = [
     [t("ecu.boschNumber"), e.boschNumber!], [t("ecu.oemPartNumber"), e.oemPartNumber!], [t("ecu.oemHardwarePartNumber"), e.oemHardwarePartNumber!], [t("ecu.projectCode"), e.projectCode!], [t("ecu.hardwareNumber"), e.hardwareNumber!], [t("ecu.softwareNumber"), e.softwareNumber!],
@@ -63,7 +66,7 @@ function Ecu({ r }: { r: AnalysisReport }) {
           </CardBody>
         </Card>
         {projectId && <DefinitionBindingCard r={r} projectId={projectId} />}
-        {projectId && analysisId && <DefinitionMatchesCard analysisId={analysisId} projectId={projectId} className="xl:col-span-2" />}
+        {project.data && <AcquisitionCard project={project.data} report={r} className="xl:col-span-2" />}
         <Card className="xl:col-span-3">
           <CardHeader title={t("ecu.memoryMap")} subtitle={t("ecu.memoryMapSubtitle")} />
           <CardBody><MemoryMap r={r} onPick={(o) => router.push(href("binary", { offset: o }))} /></CardBody>

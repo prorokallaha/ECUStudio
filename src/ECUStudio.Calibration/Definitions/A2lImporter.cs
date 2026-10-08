@@ -161,12 +161,15 @@ public sealed class A2lImporter : IDefinitionImporter
         long? yAddr = null;
         var y = type == "MAP" ? Axis(axes.ElementAtOrDefault(1), 'Y', rows, out yAddr) : null;
         var description = c.Arg(1);
+        // The Bosch label decides first; the (often German) description is the fallback.
+        var role = BoschLabels.RoleOf(name, out var primary);
+        if (role == MapRole.Unknown) role = XdfImporter.GuessRole(name + " " + description);
         var def = new MapDefinition
         {
             Id = "a2l_" + Sanitize(name),
             Name = name,
             Description = description,
-            Role = XdfImporter.GuessRole(name + " " + description),
+            Role = role,
             Address = 0,
             Rows = rows,
             Cols = cols,
@@ -179,7 +182,8 @@ public sealed class A2lImporter : IDefinitionImporter
             XAxis = x,
             YAxis = y,
             Source = SourceType.A2L,
-            Confidence = 0.9,
+            // Base maps of a role rank above its corrections and variants.
+            Confidence = role != MapRole.Unknown && !primary ? 0.88 : 0.9,
             LowerLimit = Limit(c.Arg(7)),
             UpperLimit = Limit(c.Arg(8)),
             // Counts stored in the binary: sizes above are the maxima; the binder reads the real ones per binary.

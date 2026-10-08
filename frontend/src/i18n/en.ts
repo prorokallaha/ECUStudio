@@ -312,7 +312,7 @@ export const en: Dictionary = {
     },
   },
   maps: {
-    search: "Search maps / address", all: "All ({n})", modified: "Modified ({n})", dotModified: "modified", dotUnchanged: "unchanged", unknownMaps: "Unknown maps",
+    search: "Search: name, description, role, address", all: "All ({n})", modified: "Modified ({n})", dotModified: "modified", dotUnchanged: "unchanged", unknownMaps: "Unknown maps",
     selectMap: "Select a map", selectHint: "Pick a map or an unknown candidate on the left. Ctrl+P searches by name or address.",
     tabTable: "Table", tabHeatmap: "Heatmap", tabHex: "Hex", tabCompare: "Compare", deltaAbs: "Δ abs", onlyChanged: "Only changed",
     cellStock: " (stock {v})", axesChanged: "Axes changed",
@@ -338,6 +338,7 @@ export const en: Dictionary = {
     },
   },
   mapEditor: {
+    noGroup: "No group", 
     unknownMap: "Unknown map", candidateHyp: "Candidate: {role}, {pct}%",
     filter: { all: "All", defined: "Defined", modified: "Modified", candidates: "Candidates", unknown: "Unknown", user: "User" },
     treeCandidates: "Candidates and unknown", candidateChanged: "changed {n} cells, {pct} %", treeEmpty: "Nothing found",
@@ -470,6 +471,16 @@ export const en: Dictionary = {
     vinHint: "The VIN identifies the vehicle, not the installed turbo, injectors or gearbox.", binaryOptional: "Binary (optional)",
   },
   acq: {
+    waitingIndex: "Waiting for torrent index", notDownloaded: "DAMOS not downloaded", cardTitle: "DAMOS / A2L for this software",
+    cardSubtitle: "only map definitions for your BIN's SW, OEM part and project", uploadManual: "Upload A2L from disk",
+    manualHint: "You can fetch the file manually: in qBittorrent tick only this file, then upload it with the button below.",
+    reason: {
+      NoSources: "No torrent or DAMOS folder is added. Add a .torrent in the Library.",
+      NotIndexed: "The torrent is still being indexed. The search restarts by itself when the index is ready.",
+      NoCandidates: "No A2L/DAMOS for this software (SW, OEM part, project) in the sources.",
+      DownloadFailed: "The file is in the torrent but could not be downloaded ({msg}). Usually the torrent has no seeders right now or Windows Firewall blocks ECUStudio.",
+      Incompatible: "A DAMOS was found and checked, but its addresses do not fit your BIN. It is not bound, so no wrong bytes get edited.",
+    },
     label: "Definition", none: "none", searching: "Searching…", downloading: "Downloading {pct} %", verifying: "Verifying…", importing: "Importing…",
     matching: "Matching maps…", metadata: "Torrent metadata…", notFound: "Not found · heuristic analysis", failed: "Search failed",
     probable: "Probable: {name}", verified: "VERIFIED", partial: "PARTIAL", manual: "bound manually",

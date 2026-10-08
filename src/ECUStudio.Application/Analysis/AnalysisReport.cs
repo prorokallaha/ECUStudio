@@ -17,6 +17,10 @@ public sealed record MapSummary
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
+    /// <summary>Long name from the definition (A2L long identifier, XDF description).</summary>
+    public string? Description { get; init; }
+    /// <summary>Function group: the Bosch component prefix of the label (AccPed, FMTC, PCR…) when it has one.</summary>
+    public string? Group { get; init; }
     public MapRole Role { get; init; }
     public MapCategory Category { get; init; }
     public int Address { get; init; }

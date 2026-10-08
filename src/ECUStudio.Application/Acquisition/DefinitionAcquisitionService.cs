@@ -26,7 +26,8 @@ public sealed class DefinitionAcquisitionService(
     JobTracker jobs,
     PluginRegistry plugins)
 {
-    private const int MaxAttempts = 3;
+    private const int MaxAttempts = 4;
+    private const int MaxShown = 8;
     private readonly ConcurrentDictionary<Guid, DefinitionAcquisition> _live = new();
     private readonly ConcurrentDictionary<Guid, byte> _running = new();
     private SemaphoreSlim _downloads = new(Math.Max(1, settingsStore.LoadSettings().MaxConcurrentDownloads));
@@ -77,6 +78,28 @@ public sealed class DefinitionAcquisitionService(
         return await StartAsync(project.Id, new AcquisitionRequest(file.Id), ct);
     }
 
+    /// <summary>
+    /// A source was added or re-indexed: repeats the search for analysed projects that have no definition yet and whose
+    /// last search did not find one (or never ran). Returns how many searches started.
+    /// </summary>
+    public async Task<int> ResumeAfterLibraryChangeAsync(CancellationToken ct = default)
+    {
+        if (!_settings.AutoAcquire || definitions.Library.Roots().Count == 0) return 0;
+        var started = 0;
+        foreach (var p in await store.ListAsync(ct))
+        {
+            if (p.Definition is not null || p.LatestAnalysisId is null || _running.ContainsKey(p.Id) || p.Files.Count == 0) continue;
+            if (p.Acquisition is { State: not (AcquisitionState.NotFound or AcquisitionState.Failed) }) continue;
+            try
+            {
+                await StartAsync(p.Id, new AcquisitionRequest(), ct);
+                started++;
+            }
+            catch (EcuStudioException) { }
+        }
+        return started;
+    }
+
     public async Task<Guid> StartAsync(Guid projectId, AcquisitionRequest request, CancellationToken ct = default)
     {
         var project = await store.GetAsync(projectId, ct) ?? throw new NotFoundException($"Project {projectId} not found");
@@ -125,8 +148,9 @@ public sealed class DefinitionAcquisitionService(
         var library = definitions.Library;
         var roots = library.Roots().ToDictionary(r => r.Root.Id, r => r.Root);
         var matches = library.Match(key, 400)
-            .Where(m => DefinitionService.IsAcquirable(m.Entry) && m.Rank <= 4 && (explicitEntry is null || m.Entry.Id == explicitEntry))
-            .OrderBy(m => m.Rank).ThenBy(m => FormatOrder(m.Entry)).ThenBy(m => roots.GetValueOrDefault(m.Entry.RootId)?.Priority ?? 0).ThenByDescending(m => m.Score)
+            .Where(m => IsWanted(m, key) && (explicitEntry is null || m.Entry.Id == explicitEntry))
+            .OrderBy(m => m.Rank).ThenBy(m => FormatOrder(m.Entry)).ThenBy(m => SoftwareDistance(m.Entry, key))
+            .ThenBy(m => roots.GetValueOrDefault(m.Entry.RootId)?.Priority ?? 0).ThenByDescending(m => m.Score)
             .ToList();
         if (explicitEntry is not null && matches.Count == 0)
         {
@@ -135,7 +159,7 @@ public sealed class DefinitionAcquisitionService(
             matches = library.Match(key, 2000).Where(m => m.Entry.Id == explicitEntry).ToList();
             if (matches.Count == 0) throw new EcuStudioException("ACQUISITION_MISMATCH", $"{e.RelativePath} does not match this binary");
         }
-        var candidates = matches.Take(12).Select(m => Candidate(m, roots, key)).ToList();
+        var candidates = matches.Take(MaxShown).Select(m => Candidate(m, roots, key)).ToList();
         Set(a => a with { Candidates = candidates });
 
         // LOCAL_SEARCH: files already on disk (directories, earlier downloads).
@@ -151,6 +175,9 @@ public sealed class DefinitionAcquisitionService(
             if (outcome.Value.Verified.Result.Status is DefinitionFit.Exact or DefinitionFit.Compatible) break;
         }
 
+        var downloadsTried = 0;
+        var downloadsFailed = 0;
+        string? lastDownloadError = null;
         // TORRENT_SEARCH: only when nothing local is good enough.
         if (best is null || best.Value.Verified.Result.Status is not (DefinitionFit.Exact or DefinitionFit.Compatible))
         {
@@ -161,11 +188,22 @@ public sealed class DefinitionAcquisitionService(
             Step("torrent_search", "Searching torrent sources", StepState.Done,
                 remote.Count == 0 ? "no matching files in torrent sources" : $"{remote.Count} candidate(s), best: {Path.GetFileName(remote[0].Entry.RelativePath)} ({remote[0].Confidence})");
 
+            var deadRoots = new HashSet<Guid>();
             foreach (var m in allowed)
             {
+                // A torrent that delivered nothing to one file will not deliver the next one either.
+                if (deadRoots.Contains(m.Entry.RootId)) continue;
                 var cand = Candidate(m, roots, key);
                 Set(a => a with { State = AcquisitionState.Downloading, Chosen = cand });
-                if (!await DownloadAsync(m, roots[m.Entry.RootId], cand, log, Step, transfer => Set(a => a with { Transfer = transfer }), ct)) continue;
+                downloadsTried++;
+                var error = await DownloadAsync(m, roots[m.Entry.RootId], cand, log, Step, transfer => Set(a => a with { Transfer = transfer }), ct);
+                if (error is not null)
+                {
+                    downloadsFailed++;
+                    lastDownloadError = error;
+                    if (error.Contains("no data for", StringComparison.Ordinal)) deadRoots.Add(m.Entry.RootId);
+                    continue;
+                }
                 Set(a => a with { State = AcquisitionState.Verifying });
                 var refreshed = library.Match(key, 2000).FirstOrDefault(x => x.Entry.Id == m.Entry.Id) ?? m;
                 var outcome = TryVerify(refreshed, image, roots, key, log, (s, msg) => Step("verifying", "Checking compatibility", s, msg));
@@ -187,13 +225,29 @@ public sealed class DefinitionAcquisitionService(
             }
         }
 
+        if (best is null && downloadsTried > 0 && downloadsFailed == downloadsTried)
+        {
+            // The files exist in the torrent but could not be fetched: that is not "not found".
+            log.Add("Definition files were found in the torrent but none could be downloaded");
+            await FinishAsync(project.Id, Live(project.Id) with
+            {
+                State = AcquisitionState.Failed, Reason = AcquisitionReason.DownloadFailed, Message = lastDownloadError ?? "Download failed",
+                Log = log.ToList(), Transfer = null,
+            });
+            jobs.Publish(new JobEvent(jobId, "completed", null, JobStatus.Completed));
+            return;
+        }
         if (best is not { } chosen || chosen.Verified.Result.Status is DefinitionFit.Incompatible or DefinitionFit.Unknown || chosen.Verified.Result.Score < 50)
         {
             log.Add("No suitable definition: maps are discovered heuristically and stay candidates");
+            var reason = best is not null ? AcquisitionReason.Incompatible
+                : roots.Count == 0 ? AcquisitionReason.NoSources
+                : roots.Values.Any(r => r.Enabled && r.LastScanAt is null) ? AcquisitionReason.NotIndexed
+                : AcquisitionReason.NoCandidates;
             await FinishAsync(project.Id, Live(project.Id) with
             {
-                State = AcquisitionState.NotFound, Message = "Not found: heuristic analysis", Log = log.ToList(),
-                Verification = best?.Verified.Result,
+                State = AcquisitionState.NotFound, Reason = reason, Message = "Not found: heuristic analysis", Log = log.ToList(),
+                Verification = best?.Verified.Result, Transfer = null,
             });
             jobs.Publish(new JobEvent(jobId, "completed", null, JobStatus.Completed));
             return;
@@ -251,6 +305,30 @@ public sealed class DefinitionAcquisitionService(
         DefinitionFit.Exact => 0, DefinitionFit.Compatible => 1, DefinitionFit.Partial => 2, DefinitionFit.Unknown => 3, _ => 4,
     };
 
+    /// <summary>
+    /// Only what can define this binary's maps: A2L/XDF/ECU definitions of the same software (or project) and zip
+    /// archives named after its OEM part or SW number. Data sets (DCM), notes, other ECUs and other parts are not offered.
+    /// </summary>
+    public static bool IsWanted(DefinitionMatch m, BinaryKey key)
+    {
+        if (m.Rank > 4) return false;
+        if (DefinitionService.IsImportable(m.Entry.Format)) return true;
+        if (!DefinitionService.IsAcquirable(m.Entry)) return false;
+        var ids = m.Entry.Identifiers;
+        var oem = key.OemNumber is { Length: > 0 } o ? LibraryScanner.NormalizeOem(o) : null;
+        var shortSw = DefinitionMatcher.ShortSoftware(key.SoftwareNumber);
+        return oem is not null && ids.OemNumbers.Contains(oem)
+            || key.SoftwareNumber is { } sw && ids.SoftwareNumbers.Contains(sw)
+            || shortSw is not null && DefinitionMatcher.ShortSoftwareIn(m.Entry.RelativePath)?.ToString(System.Globalization.CultureInfo.InvariantCulture) == shortSw;
+    }
+
+    /// <summary>Distance between the binary's SW number and the one in the file name (0 when equal, large when unknown).</summary>
+    private static int SoftwareDistance(LibraryEntry e, BinaryKey key)
+    {
+        if (DefinitionMatcher.ShortSoftware(key.SoftwareNumber) is not { } s || DefinitionMatcher.ShortSoftwareIn(e.RelativePath) is not { } n) return 500_000;
+        return Math.Abs(n - int.Parse(s, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     private static int FormatOrder(LibraryEntry e) => e.Format switch
     {
         LibraryFormat.A2L => 0, LibraryFormat.EcuDef => 1, LibraryFormat.Xdf => 2, _ => 3,
@@ -289,7 +367,8 @@ public sealed class DefinitionAcquisitionService(
         }
     }
 
-    private async Task<bool> DownloadAsync(DefinitionMatch m, LibraryRoot root, AcquisitionCandidate cand, List<string> log,
+    /// <summary>Fetches one file; returns null when it is on disk, else why it is not.</summary>
+    private async Task<string?> DownloadAsync(DefinitionMatch m, LibraryRoot root, AcquisitionCandidate cand, List<string> log,
         Action<string, string, StepState, string?, double?, TransferInfo?> step, Action<TransferInfo> live, CancellationToken ct)
     {
         var library = definitions.Library;
@@ -299,7 +378,7 @@ public sealed class DefinitionAcquisitionService(
         if (torrent is null || dir is null || root.InfoHash is null)
         {
             log.Add($"{cand.FileName}: torrent source {root.Name} has no metadata or download directory");
-            return false;
+            return $"{root.Name}: no torrent metadata or download directory";
         }
         var target = Path.Combine(dir, m.Entry.RelativePath.Replace('/', Path.DirectorySeparatorChar));
         if (cache.Find(root.InfoHash, m.Entry.RelativePath) is not null || File.Exists(target) && new FileInfo(target).Length == m.Entry.Size)
@@ -308,7 +387,7 @@ public sealed class DefinitionAcquisitionService(
             step("downloading", label, StepState.Done, $"{cand.FileName} from cache", 1, cached);
             library.MarkDownloaded(root.Id, [m.Entry.RelativePath]);
             log.Add($"{cand.FileName}: taken from the definition cache");
-            return true;
+            return null;
         }
 
         step("downloading", label, StepState.Running, $"Connecting to peers for {cand.FileName}", 0, null);
@@ -337,7 +416,7 @@ public sealed class DefinitionAcquisitionService(
         {
             log.Add($"{cand.FileName}: download failed: {ex.Message}");
             step("downloading", label, StepState.Failed, $"{cand.FileName}: {ex.Message}", null, null);
-            return false;
+            return $"{cand.FileName}: {ex.Message}";
         }
         finally { _downloads.Release(); }
 
@@ -345,7 +424,7 @@ public sealed class DefinitionAcquisitionService(
         {
             log.Add($"{cand.FileName}: downloaded file is missing or incomplete");
             step("downloading", label, StepState.Failed, $"{cand.FileName}: incomplete", null, null);
-            return false;
+            return $"{cand.FileName}: downloaded file is missing or incomplete";
         }
         string sha;
         await using (var fs = File.OpenRead(target)) sha = Convert.ToHexStringLower(await SHA256.HashDataAsync(fs, ct));
@@ -353,7 +432,7 @@ public sealed class DefinitionAcquisitionService(
         library.MarkDownloaded(root.Id, [m.Entry.RelativePath]);
         log.Add($"{cand.FileName}: downloaded ({m.Entry.Size / 1024} KB) from {root.Name}");
         step("downloading", label, StepState.Done, $"{cand.FileName} downloaded", 1, new TransferInfo(cand.FileName, m.Entry.Size, m.Entry.Size, 0, 0, 0, 0));
-        return true;
+        return null;
     }
 
     private async Task FetchPendingMetadataAsync(List<string> log, Action<StepState, string?> step, CancellationToken ct)

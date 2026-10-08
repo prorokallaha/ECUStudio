@@ -62,7 +62,7 @@ public class TorrentClientTests
 
             await using var client = new MonoTorrentClient(new MonoTorrentOptions
             {
-                StateDirectory = Path.Combine(root, "state"), UseDht = false, ListenPort = FreePort(), MaxUploadBytesPerSecond = 0,
+                StateDirectory = Path.Combine(root, "state"), UseDht = false, PortForwarding = false, ListenPort = FreePort(), MaxUploadBytesPerSecond = 0,
                 ExtraPeers = [new IPEndPoint(IPAddress.Loopback, seedPort)], StallTimeout = TimeSpan.FromSeconds(30),
             });
             var save = Path.Combine(root, "download");
@@ -102,7 +102,7 @@ public class TorrentClientTests
             File.WriteAllBytes(Path.Combine(dir, "x.bin"), new byte[1000]);
             File.WriteAllBytes(Path.Combine(dir, "y.bin"), new byte[1000]);
             var bytes = new TorrentCreator().Create(new TorrentFileSource(dir)).Encode();
-            var client = new MonoTorrentClient(new MonoTorrentOptions { StateDirectory = Path.Combine(root, "s"), UseDht = false, ListenPort = FreePort() });
+            var client = new MonoTorrentClient(new MonoTorrentOptions { StateDirectory = Path.Combine(root, "s"), UseDht = false, PortForwarding = false, ListenPort = FreePort() });
             var ex = Assert.ThrowsAsync<Core.EcuStudioException>(() => client.DownloadAsync(new TorrentDownloadRequest(bytes, Path.Combine(root, "d"), ["Arch/nope.bin"]), null, CancellationToken.None)).GetAwaiter().GetResult();
             Assert.Equal("TORRENT_FILE_MISSING", ex.Code);
             client.DisposeAsync().AsTask().GetAwaiter().GetResult();

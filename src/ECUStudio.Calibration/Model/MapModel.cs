@@ -195,7 +195,9 @@ public sealed class CalibrationSet
         foreach (var m in _maps.Values)
         {
             if (m.Definition.Role != role) continue;
-            if (best is null || m.Definition.Confidence > best.Definition.Confidence) best = m;
+            // Equal confidence: the larger table is the base map, smaller ones are usually corrections.
+            if (best is null || m.Definition.Confidence > best.Definition.Confidence
+                || m.Definition.Confidence == best.Definition.Confidence && m.Definition.Rows * m.Definition.Cols > best.Definition.Rows * best.Definition.Cols) best = m;
         }
         return best;
     }

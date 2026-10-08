@@ -2,10 +2,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Binary, Box, GitCompare, Grid3x3, LineChart, Lock, PencilLine, SplitSquareHorizontal, Table2 } from "lucide-react";
+import { Binary, Box, FilePlus2, GitCompare, Grid3x3, LineChart, Lock, PencilLine, SplitSquareHorizontal, Table2 } from "lucide-react";
 import type { AnalysisReport, MapData } from "@/types/domain";
 import type { EditState, MapEditPreview, MapEditorView, MapOperation, MapOperationKind, WorkingMapValues } from "@/types/maps-edit";
-import { Badge, ConfidenceBadge, KV, SectionTitle, Segmented, SeverityBadge, SourceBadge, Tabs } from "@/components/ui";
+import { Badge, Button, ConfidenceBadge, KV, SectionTitle, Segmented, SeverityBadge, SourceBadge, Tabs } from "@/components/ui";
+import { SaveDialog } from "@/features/binary/save-dialog";
+import { useProject } from "@/hooks/use-analysis";
 import { MapTable, emptySelection, selectedIndices, selectionCount, type CellSelection, type TableKind } from "./map-table";
 import { MapEditConfirm, MapEditToolbar } from "./map-edit-toolbar";
 import { MapSurface3D } from "./map-surface-3d";
@@ -55,8 +57,11 @@ export function MapEditor({ r, data, target, editState, initialView = "table", o
   initialView?: MapEditorView; onViewChange?: (v: MapEditorView) => void;
 }) {
   const t = useT();
-  const { href } = useWorkspace();
+  const { href, router } = useWorkspace();
   const select = useSelection((s) => s.select);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const project = useProject(target?.projectId);
+  const targetFile = project.data?.files.find((f) => f.id === target?.fileId);
   const s = data.summary;
   const cols = data.xAxis.length || 1;
   const rows = data.yAxis.length || 1;
@@ -257,7 +262,13 @@ export function MapEditor({ r, data, target, editState, initialView = "table", o
           count={count} disabled={!canEdit} busy={busy}
           canUndo={!!editState?.canUndo} canRedo={!!editState?.canRedo} canRevert={mapEdited}
           onOp={(k, v) => requestOp(k, v)} onCopy={copy} onPaste={paste} onRevert={revert} onUndo={undo} onRedo={redo}
+          extra={targetFile && (
+            <Button size="xs" variant={(editState?.history.length ?? 0) > 0 ? "primary" : "secondary"} disabled={!(editState?.history.length)} onClick={() => setSaveOpen(true)} title={t("editor.saveTip")}>
+              <FilePlus2 className="size-3" />{t("editor.saveAsNew")}
+            </Button>
+          )}
         />
+        {target && targetFile && <SaveDialog open={saveOpen} onClose={() => setSaveOpen(false)} projectId={target.projectId} file={targetFile} onOpenFile={(id) => router.push(href("binary", { file: id }))} />}
         {!target && <Notice tone="unknown">{t("mapEditor.noTarget")}</Notice>}
         {workingBroken && <Notice tone="warn">{t("mapEditor.workingUnreadable")}</Notice>}
         {pending && (
@@ -308,7 +319,9 @@ export function MapEditor({ r, data, target, editState, initialView = "table", o
 
       <aside className="w-72 shrink-0 space-y-3 overflow-y-auto border-l border-border bg-bg-elev p-3 text-xs">
         <div>
-          <div className={cn("text-sm font-semibold", isWeakMap(s) && "text-fg-muted")}>{label}</div>
+          <div className={cn("break-all text-sm font-semibold", isWeakMap(s) && "text-fg-muted")}>{label}</div>
+          {s.description && <div className="text-xs text-fg-muted">{s.description}</div>}
+          {s.role !== "Unknown" && label === s.name && <div className="text-[11px] text-calc">{t.tx(`role.${s.role}`, s.role)}</div>}
           {label !== s.name && !isWeakMap(s) && <div className="text-[11px] text-fg-subtle">{s.name}</div>}
           <div className="mt-1 flex flex-wrap gap-1">
             <SourceBadge source={s.source} /><ConfidenceBadge score={s.confidence} />

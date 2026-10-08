@@ -33,6 +33,31 @@ public static class DefinitionMatcher
         return new string(s.Where(char.IsAsciiLetterOrDigit).ToArray()) is { Length: > 0 } n ? n : null;
     }
 
+    /// <summary>Last six digits of a Bosch software number (1037382425 → 382425), null for anything else.</summary>
+    public static string? ShortSoftware(string? sw) =>
+        sw is { Length: 10 } s && s.StartsWith("103", StringComparison.Ordinal) && s.All(char.IsAsciiDigit) ? s[4..] : null;
+
+    /// <summary>Six-digit number bounded by non-digits in the file name or its folder.</summary>
+    public static int? ShortSoftwareIn(string relativePath)
+    {
+        foreach (var part in NameParts(relativePath))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(part, @"(?<![0-9])(3[0-9]{5}|5[0-9]{5})(?![0-9])");
+            if (m.Success) return int.Parse(m.Value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        return null;
+    }
+
+    private static bool NameHasToken(string relativePath, string token) =>
+        NameParts(relativePath).Any(p => System.Text.RegularExpressions.Regex.IsMatch(p, $"(?<![0-9]){token}(?![0-9])"));
+
+    private static IEnumerable<string> NameParts(string relativePath)
+    {
+        var parts = relativePath.Split('/', '\\');
+        yield return parts[^1];
+        if (parts.Length > 1) yield return parts[^2];
+    }
+
     private static DefinitionMatch? Score(BinaryKey key, string? family, string? oem, LibraryEntry e)
     {
         var ids = e.Identifiers;
@@ -42,7 +67,10 @@ public static class DefinitionMatcher
         if (key.Sha256 is { } sha && e.Sha256 is { } esha && string.Equals(sha, esha, StringComparison.OrdinalIgnoreCase))
             return new DefinitionMatch(e, MatchLevel.Exact, 1.0, ["identical file (SHA-256)"], 1);
 
-        var swMatch = key.SoftwareNumber is { } sw && ids.SoftwareNumbers.Contains(sw);
+        var swFull = key.SoftwareNumber is { } sw && ids.SoftwareNumbers.Contains(sw);
+        // Archives often name Bosch software by its last six digits ("…_382425_ori.bin", "03G906021JH_0131_382415_P447_HAXE").
+        var swShort = !swFull && ShortSoftware(key.SoftwareNumber) is { } shortSw && NameHasToken(e.RelativePath, shortSw);
+        var swMatch = swFull || swShort;
         var hwKnown = key.HardwareNumber is { } && ids.HardwareNumbers.Count > 0;
         var hwMatch = key.HardwareNumber is { } hw && ids.HardwareNumbers.Contains(hw);
         var oemMatch = oem is not null && ids.OemNumbers.Contains(oem);
@@ -55,7 +83,8 @@ public static class DefinitionMatcher
         var engineMatch = key.EngineHint is { } eh && ids.EngineHints.Any(h => h.StartsWith(eh, StringComparison.OrdinalIgnoreCase));
 
         if (familyConflict) return null; // a definition for another ECU family is never offered
-        if (swMatch) reasons.Add($"SW {key.SoftwareNumber} {where}");
+        if (swFull) reasons.Add($"SW {key.SoftwareNumber} {where}");
+        else if (swShort) reasons.Add($"SW {ShortSoftware(key.SoftwareNumber)} (short form of {key.SoftwareNumber}) in file name");
         if (hwMatch) reasons.Add($"HW {key.HardwareNumber} {where}");
         else if (hwKnown) reasons.Add($"HW differs: file has {string.Join(", ", ids.HardwareNumbers)}, binary has {key.HardwareNumber}");
         if (oemMatch) reasons.Add($"OEM part {key.OemNumber} {where}");

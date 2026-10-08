@@ -67,7 +67,7 @@ export const MapTree = memo(function MapTree({ r, edited, activeMap, activeCandi
 
   const needle = q.trim().toLowerCase();
   const visible = all.filter((it) => inFilter(it, filter) && (!needle || (it.kind === "map"
-    ? `${it.label} ${it.m.name} ${it.m.id} ${hex(it.m.address)}`
+    ? `${it.label} ${it.m.name} ${it.m.description ?? ""} ${it.m.group ?? ""} ${t.tx(`role.${it.m.role}`, "")} ${it.m.id} ${hex(it.m.address)}`
     : `${it.label} ${it.c.id} ${hex(it.c.address)}`).toLowerCase().includes(needle)));
   const strong = visible.filter((it): it is Extract<Item, { kind: "map" }> => it.kind === "map" && !isWeakMap(it.m));
   const weak = visible.filter((it) => it.kind === "candidate" || isWeakMap(it.m));
@@ -99,6 +99,22 @@ export const MapTree = memo(function MapTree({ r, edited, activeMap, activeCandi
         {CATS.map((cat) => {
           const items = strong.filter((it) => it.m.category === cat);
           if (!items.length) return null;
+          // Definition maps without a known role: grouped by function (Bosch component prefix), as in the A2L.
+          if (cat === "Unknown" && items.some((it) => it.m.group)) {
+            const groups = new Map<string, typeof items>();
+            for (const it of [...items].sort((a, b) => a.m.name.localeCompare(b.m.name))) {
+              const g = it.m.group ?? t("mapEditor.noGroup");
+              groups.set(g, [...(groups.get(g) ?? []), it]);
+            }
+            return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([g, list]) => (
+              <div key={`g_${g}`}>
+                {header(`g_${g}`, g, list.length)}
+                {!closed[`g_${g}`] && list.map((it) => (
+                  <MapRow key={it.m.id} m={it.m} label={it.label} active={activeMap === it.m.id} edited={edited.has(it.m.id)} onClick={onMap} />
+                ))}
+              </div>
+            ));
+          }
           return (
             <div key={cat}>
               {header(cat, t.tx(`mapCategory.${cat}`, cat), items.length)}
@@ -137,10 +153,16 @@ const MapRow = memo(function MapRow({ m, label, active, edited, weak, onClick }:
 }) {
   const t = useT();
   return (
-    <button onClick={() => onClick(m.id)} title={`${label} · ${m.name} · ${hex(m.address)}`}
+    <button onClick={() => onClick(m.id)} title={`${label} · ${m.description ?? m.name} · ${hex(m.address)}`}
       className={cn("flex w-full items-center gap-2 py-1 pl-6 pr-2 text-left hover:bg-panel-2", active && (weak ? "bg-ai/12" : "bg-calc/12 text-fg"))}>
       <span className={cn("size-1.5 shrink-0 rounded-full", weak ? "bg-ai" : m.modified ? "bg-calc" : "bg-ok/60")} title={m.modified ? t("maps.dotModified") : t("maps.dotUnchanged")} />
-      <span className={cn("flex-1 truncate", weak && "text-fg-muted")}>{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className={cn("flex items-center gap-1", weak && "text-fg-muted")}>
+          <span className="truncate">{label}</span>
+          {!weak && m.role !== "Unknown" && label === m.name && <span className="shrink-0 rounded border border-calc/30 px-1 text-[9px] text-calc">{t.tx(`role.${m.role}`, m.role)}</span>}
+        </span>
+        {m.description && <span className="block truncate text-[10px] text-fg-subtle">{m.description}</span>}
+      </span>
       {weak && <span className="shrink-0 rounded border border-ai/30 px-1 text-[9px] text-ai" title={t("acq.heuristicHint")}>DETECTED</span>}
       {edited && <Pencil className="size-3 shrink-0 text-attn" aria-label={t("mapEditor.editedNotAnalysed")} />}
       {m.modified && <span className="num text-[10px] text-warn">{m.maxDeltaPct > 0 ? "+" : ""}{m.maxDeltaPct.toFixed(0)}%</span>}

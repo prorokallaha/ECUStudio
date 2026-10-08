@@ -26,6 +26,8 @@ export function unknownLabel(t: T, role?: string | null, confidence?: number | n
  */
 export function mapLabel(t: T, m: MapSummary, roleCount?: Map<string, number>): string {
   if (isWeakMap(m)) return unknownLabel(t, m.role, m.confidence);
+  // A2L/XDF labels are what a calibrator searches for and recognises (AccPed_trqEngHiGear_MAP): keep them.
+  if (m.source === "A2L" || m.source === "Damos" || m.source === "Xdf") return m.name;
   if (m.role !== "Unknown" && (roleCount?.get(m.role) ?? 1) === 1) return t.tx(`role.${m.role}`, m.name);
   return m.name;
 }

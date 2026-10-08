@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Circle, Download, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Circle, Download, FileUp, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { AnalysisReport, Project } from "@/types/domain";
 import type { AcquisitionCandidate, DefinitionAcquisition, DefinitionCompatibilityResult, DefinitionFit } from "@/types/library";
 import { toneText, type Tone } from "@/lib/colors";
-import { Badge, Button, Dialog, Spinner, StepBar } from "@/components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, Dialog, Spinner, StepBar } from "@/components/ui";
+import { DefinitionImportDialog } from "@/features/library/definition-import-dialog";
 import { useAcquisition, useStartAcquisition, isAcquiring, type AcquisitionLive } from "@/hooks/use-acquisition";
 import { keys } from "@/hooks/use-analysis";
 import { useWorkspace } from "@/hooks/use-workspace";
@@ -52,7 +53,9 @@ function summary(t: T, project?: Project, a?: DefinitionAcquisition | null, live
     return { text: `${baseName(a.chosen.fileName)} ${a.chosen.format} ${label}`, tone: v ? fitTone[v.status] : "ok" };
   }
   if (a?.state === "AwaitingConfirmation" && a.candidates[0]) return { text: t("acq.probable", { name: baseName(a.candidates[0].fileName) }), tone: "attn" };
+  if (a?.state === "NotFound" && a.reason === "NotIndexed") return { text: t("acq.waitingIndex"), tone: "calc" };
   if (a?.state === "NotFound") return { text: t("acq.notFound"), tone: "unknown" };
+  if (a?.state === "Failed" && a.reason === "DownloadFailed") return { text: t("acq.notDownloaded"), tone: "danger" };
   if (a?.state === "Failed") return { text: t("acq.failed"), tone: "danger" };
   return { text: t("acq.none"), tone: "unknown" };
 }
@@ -114,24 +117,64 @@ function AcquisitionDialog({ open, onClose, project, report, acquisition: a, liv
   const t = useT();
   const start = useStartAcquisition(project.id);
   const busy = isAcquiring(a) || start.isPending;
+  return (
+    <Dialog open={open} onClose={onClose} title={t("acq.title")} className="max-w-2xl"
+      footer={<Button variant="primary" disabled={busy} onClick={() => start.mutate(null)}>{busy ? <Spinner /> : <RefreshCw className="size-3.5" />}{a ? t("acq.searchAgain") : t("acq.start")}</Button>}>
+      <div className="max-h-[62vh] overflow-auto" data-testid="acquisition-dialog">
+        <AcquisitionPanel project={project} report={report} acquisition={a} live={live} />
+      </div>
+    </Dialog>
+  );
+}
+
+/** ECU page: the DAMOS search of this binary, in place of a raw list of library matches. */
+export function AcquisitionCard({ project, report, className }: { project: Project; report?: AnalysisReport; className?: string }) {
+  const t = useT();
+  const acq = useAcquisition(project.id);
+  const start = useStartAcquisition(project.id);
+  const a = acq.data ?? null;
+  const busy = isAcquiring(a) || start.isPending;
+  return (
+    <Card className={className}>
+      <CardHeader title={t("acq.cardTitle")} subtitle={t("acq.cardSubtitle")}
+        actions={<Button size="xs" disabled={busy} onClick={() => start.mutate(null)}>{busy ? <Spinner /> : <RefreshCw className="size-3" />}{a ? t("acq.searchAgain") : t("acq.start")}</Button>} />
+      <CardBody><AcquisitionPanel project={project} report={report} acquisition={a} live={acq.live} /></CardBody>
+    </Card>
+  );
+}
+
+function AcquisitionPanel({ project, report, acquisition: a, live }: { project: Project; report?: AnalysisReport; acquisition: DefinitionAcquisition | null; live: AcquisitionLive }) {
+  const t = useT();
+  const start = useStartAcquisition(project.id);
+  const [manual, setManual] = useState(false);
+  const busy = isAcquiring(a) || start.isPending;
   const tr = live.transfer ?? a?.transfer;
   const v = a?.verification ?? project.definition?.verification;
   const oem = report ? fmtParam(report.ecu.oemPartNumber) : "UNKNOWN";
   const yourBin = [oem !== "UNKNOWN" ? oem : null, a?.binarySoftwareVersion].filter(Boolean).join("_") || "—";
   const steps = STAGES.map((id) => live.steps.find((x) => x.step === id)).filter((x): x is NonNullable<typeof x> => !!x);
+  const ended = a && (a.state === "NotFound" || a.state === "Failed");
+  const top = a?.candidates[0];
 
   return (
-    <Dialog open={open} onClose={onClose} title={t("acq.title")} className="max-w-2xl"
-      footer={<Button variant="primary" disabled={busy} onClick={() => start.mutate(null)}>{busy ? <Spinner /> : <RefreshCw className="size-3.5" />}{a ? t("acq.searchAgain") : t("acq.start")}</Button>}>
-      <div className="max-h-[62vh] space-y-3 overflow-auto text-xs" data-testid="acquisition-dialog">
+      <div className="space-y-3 text-xs">
         <div className="flex items-center gap-2">
           <Badge tone={a?.state === "Done" ? "ok" : a?.state === "Failed" ? "danger" : a?.state === "AwaitingConfirmation" ? "attn" : isAcquiring(a) ? "calc" : "unknown"}>
             {a ? t.tx(`acq.state.${a.state}`, a.state) : project.definition ? t("acq.manual") : t("acq.none")}
           </Badge>
-          {a?.message && <span className="text-fg-muted">{a.message}</span>}
+          {a?.message && a.reason !== "DownloadFailed" && <span className="text-fg-muted">{a.message}</span>}
         </div>
         {!a && !project.definition && <p className="text-fg-muted">{t("acq.heuristicHint")}</p>}
-        {a?.state === "NotFound" && <p className="text-fg-muted">{t("acq.heuristicHint")}</p>}
+        {ended && a.reason && <p className={a.state === "Failed" ? "text-danger" : "text-fg-muted"}>{t.tx(`acq.reason.${a.reason}`, a.reason, { msg: a.message ?? "" })}</p>}
+        {ended && !project.definition && (
+          <div className="space-y-1.5 rounded border border-border p-2.5">
+            {top && !top.available && <>
+              <div className="text-fg-muted">{t("acq.manualHint")}</div>
+              <div className="num select-all break-all rounded bg-bg px-2 py-1 text-[11px]">{top.path}</div>
+            </>}
+            <Button size="sm" onClick={() => setManual(true)}><FileUp className="size-3.5" />{t("acq.uploadManual")}</Button>
+          </div>
+        )}
 
         {isAcquiring(a) && (
           <div className="space-y-2 rounded border border-border p-2.5">
@@ -177,7 +220,7 @@ function AcquisitionDialog({ open, onClose, project, report, acquisition: a, liv
           <div>
             <div className="mb-1 font-semibold">{t("acq.candidates")}</div>
             <div className="divide-y divide-border rounded border border-border">
-              {a.candidates.map((c) => <CandidateRow key={c.entryId} c={c} chosen={a.chosen?.entryId === c.entryId} disabled={busy} onPick={() => start.mutate(c.entryId)} />)}
+              {a.candidates.map((c) => <CandidateRow key={c.entryId} c={c} chosen={a.chosen?.entryId === c.entryId && a.state === "Done"} disabled={busy} onPick={() => start.mutate(c.entryId)} />)}
             </div>
           </div>
         )}
@@ -188,8 +231,8 @@ function AcquisitionDialog({ open, onClose, project, report, acquisition: a, liv
             <pre className="mt-1 whitespace-pre-wrap rounded bg-bg p-2 text-[11px] text-fg-muted">{a.log.join("\n")}</pre>
           </details>
         )}
+        <DefinitionImportDialog open={manual} onClose={() => setManual(false)} projectId={project.id} />
       </div>
-    </Dialog>
   );
 }
 

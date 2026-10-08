@@ -127,9 +127,23 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
         var raw = BoschMapScanner.Scan(image.Span);
         var candidates = new List<MapCandidate>();
         var index = 0;
+        var roleHints = new List<(int Index, MapRole Role, double Confidence)>();
         foreach (var r in raw)
         {
-            if (definitions.Any(d => Overlaps(d, r))) continue;
+            var covering = definitions.FindIndex(d => Overlaps(d, r));
+            if (covering >= 0)
+            {
+                // A definition map without a known role (label outside the known schemes): the structure signature of
+                // the same table may still tell what it is.
+                if (definitions[covering].Role == MapRole.Unknown)
+                {
+                    var xh = SignatureClassifier.ClassifyAxis(r.X);
+                    var yh = SignatureClassifier.ClassifyAxis(r.Y);
+                    if (SignatureClassifier.Hypotheses(r, xh, yh).OrderByDescending(h => h.Confidence).FirstOrDefault() is { Role: not MapRole.Unknown } h && h.Confidence >= scanRoleThreshold)
+                        roleHints.Add((covering, h.Role, h.Confidence));
+                }
+                continue;
+            }
             var xg = SignatureClassifier.ClassifyAxis(r.X);
             var yg = SignatureClassifier.ClassifyAxis(r.Y);
             candidates.Add(new MapCandidate
@@ -147,6 +161,16 @@ public sealed partial class Edc16U34Plugin(DefinitionDatabase definitionDb, doub
                 YAxisGuesses = yg,
                 Hypotheses = SignatureClassifier.Hypotheses(r, xg, yg),
             });
+        }
+
+        foreach (var group in roleHints.GroupBy(h => h.Role))
+        {
+            if (definitions.Any(d => d.Role == group.Key)) continue;
+            var ordered = group.OrderByDescending(h => h.Confidence).ToList();
+            if (ordered.Count > 1 && ordered[1].Confidence > ordered[0].Confidence - 0.1) continue;
+            var d = definitions[ordered[0].Index];
+            definitions[ordered[0].Index] = d with { Role = group.Key };
+            notes.Add($"{group.Key}: role of {d.Name} recognised from its structure (confidence {ordered[0].Confidence:0.00}); the name comes from the definition.");
         }
 
         // Use a scanned map in simulation only when its best hypothesis is strong, the role is not

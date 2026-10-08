@@ -21,6 +21,22 @@ public enum AcquisitionState
     Failed,
 }
 
+/// <summary>Why a search ended without a definition, for a precise message instead of "not found".</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<AcquisitionReason>))]
+public enum AcquisitionReason
+{
+    /// <summary>No library folder or torrent is configured.</summary>
+    NoSources,
+    /// <summary>A torrent is still being indexed; the search repeats when indexing finishes.</summary>
+    NotIndexed,
+    /// <summary>No A2L/definition for this software in any source.</summary>
+    NoCandidates,
+    /// <summary>Files were found but none could be downloaded (no peers, stalled, firewall).</summary>
+    DownloadFailed,
+    /// <summary>Definitions were checked and none fits the binary.</summary>
+    Incompatible,
+}
+
 /// <summary>A definition file that could be used for the binary, before it is fetched.</summary>
 public sealed record AcquisitionCandidate
 {
@@ -51,6 +67,7 @@ public sealed record DefinitionAcquisition
 {
     public Guid? JobId { get; init; }
     public required AcquisitionState State { get; init; }
+    public AcquisitionReason? Reason { get; init; }
     public string? FileSha256 { get; init; }
     public string? Message { get; init; }
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;

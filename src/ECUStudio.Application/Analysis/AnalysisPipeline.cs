@@ -267,7 +267,8 @@ public sealed class AnalysisPipeline(PluginRegistry plugins, VehicleKnowledgeBas
         var def = m.Definition;
         return new MapSummary
         {
-            Id = m.Id, Name = def.Name, Role = def.Role, Category = def.Category, Address = def.Address, Rows = def.Rows, Cols = def.Cols,
+            Id = m.Id, Name = def.Name, Description = string.IsNullOrWhiteSpace(def.Description) ? null : def.Description,
+            Group = ECUStudio.Calibration.Definitions.BoschLabels.Component(def.Name), Role = def.Role, Category = def.Category, Address = def.Address, Rows = def.Rows, Cols = def.Cols,
             DataType = def.DataType, Endian = def.Endian, Factor = def.Factor, Offset = def.Offset, Unit = def.Unit,
             XAxis = def.XAxis is null ? "-" : $"{def.XAxis.Name} [{def.XAxis.Unit}] × {def.Cols}",
             YAxis = def.YAxis is null ? "-" : $"{def.YAxis.Name} [{def.YAxis.Unit}] × {def.Rows}",

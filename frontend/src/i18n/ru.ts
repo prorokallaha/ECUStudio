@@ -314,7 +314,7 @@ export const ru = {
     },
   },
   maps: {
-    search: "Поиск карт / адреса", all: "Все ({n})", modified: "Изменённые ({n})", dotModified: "изменена", dotUnchanged: "без изменений", unknownMaps: "Неизвестные карты",
+    search: "Поиск: имя, описание, роль, адрес", all: "Все ({n})", modified: "Изменённые ({n})", dotModified: "изменена", dotUnchanged: "без изменений", unknownMaps: "Неизвестные карты",
     selectMap: "Выберите карту", selectHint: "Выберите карту или неизвестного кандидата слева. Ctrl+P ищет по имени или адресу.",
     tabTable: "Таблица", tabHeatmap: "Тепловая карта", tabHex: "Hex", tabCompare: "Сравнение", deltaAbs: "Δ абс.", onlyChanged: "Только изменённые",
     cellStock: " (сток {v})", axesChanged: "Оси изменены",
@@ -340,6 +340,7 @@ export const ru = {
     },
   },
   mapEditor: {
+    noGroup: "Без группы", 
     unknownMap: "Неизвестная карта", candidateHyp: "Кандидат: {role}, {pct}%",
     filter: { all: "Все", defined: "Определённые", modified: "Изменённые", candidates: "Кандидаты", unknown: "Неизвестные", user: "Пользовательские" },
     treeCandidates: "Кандидаты и неизвестные", candidateChanged: "изменено ячеек: {n}, {pct} %", treeEmpty: "Ничего не найдено",
@@ -472,6 +473,16 @@ export const ru = {
     vinHint: "VIN определяет автомобиль, а не установленные турбину, форсунки или КПП.", binaryOptional: "Бинарь (необязательно)",
   },
   acq: {
+    waitingIndex: "Ждёт индекс торрента", notDownloaded: "DAMOS не скачан", cardTitle: "DAMOS / A2L для этой прошивки",
+    cardSubtitle: "только определения карт под SW, OEM и проект вашего BIN", uploadManual: "Загрузить A2L с диска",
+    manualHint: "Файл можно скачать вручную: в qBittorrent отметьте только этот файл, затем загрузите его кнопкой ниже.",
+    reason: {
+      NoSources: "Не добавлен ни один торрент или папка с DAMOS. Добавьте .torrent в «Библиотеке».",
+      NotIndexed: "Торрент ещё индексируется. Поиск запустится сам, когда индекс будет готов.",
+      NoCandidates: "В источниках нет A2L/DAMOS для этой прошивки (SW, OEM, проект).",
+      DownloadFailed: "Файл есть в торренте, но скачать его не удалось ({msg}). Обычно у торрента сейчас нет раздающих или брандмауэр Windows не пускает ECUStudio в сеть.",
+      Incompatible: "DAMOS найден и проверен, но его адреса не совпадают с вашим BIN. Он не подключён, чтобы не править не те байты.",
+    },
     label: "Определение", none: "нет", searching: "Поиск…", downloading: "Загрузка {pct} %", verifying: "Проверка…", importing: "Импорт…",
     matching: "Сопоставление карт…", metadata: "Метаданные торрента…", notFound: "Не найдено · эвристический анализ", failed: "Ошибка поиска",
     probable: "Вероятное: {name}", verified: "VERIFIED", partial: "PARTIAL", manual: "подключено вручную",

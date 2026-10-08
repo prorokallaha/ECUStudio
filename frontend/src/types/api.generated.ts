@@ -2506,6 +2506,8 @@ export interface components {
             reasons: string[];
             versions: string[];
         };
+        /** @enum {unknown} */
+        AcquisitionReason: "NoSources" | "NotIndexed" | "NoCandidates" | "DownloadFailed" | "Incompatible" | null;
         AcquisitionRequest: {
             /** Format: uuid */
             fileId?: null | string;
@@ -2850,6 +2852,7 @@ export interface components {
             /** Format: uuid */
             jobId?: null | string;
             state: components["schemas"]["AcquisitionState"];
+            reason?: null | components["schemas"]["AcquisitionReason"];
             fileSha256?: null | string;
             message?: null | string;
             /** Format: date-time */
@@ -3536,6 +3539,8 @@ export interface components {
         MapSummary: {
             id: string;
             name: string;
+            description?: null | string;
+            group?: null | string;
             role: components["schemas"]["MapRole"];
             category: components["schemas"]["MapCategory"];
             /** Format: int32 */
