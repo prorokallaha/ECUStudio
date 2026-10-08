@@ -125,6 +125,37 @@ public class TorrentClientTests
         finally { try { Directory.Delete(root, true); } catch (IOException) { } }
     }
 
+    [Fact]
+    public void Requested_paths_match_files_with_windows_separators()
+    {
+        // MonoTorrent on Windows reports "DAMOS GIFROM\\SW\\HAXE\\x.a2l"; the library index uses '/'.
+        string[] files = [@"DAMOS GIFROM\SW_VW_bis_2.5\EDC16U34\SW\HAXE\Daten\C447HAXE_00_13.a2l", @"DAMOS GIFROM\other.bin"];
+        var picked = MonoTorrentClient.SelectFiles("Damos and firmware (GIFROM)", files, f => f,
+            ["Damos and firmware (GIFROM)/DAMOS GIFROM/SW_VW_bis_2.5/EDC16U34/SW/HAXE/Daten/C447HAXE_00_13.a2l"]);
+        Assert.Equal(files[0], Assert.Single(picked));
+        var ex = Assert.Throws<Core.EcuStudioException>(() => MonoTorrentClient.SelectFiles("T", files, f => f, ["T/nope.a2l"]));
+        Assert.Equal("TORRENT_FILE_MISSING", ex.Code);
+    }
+
+    /// <summary>
+    /// The real GIFROM archive (433k files): every path the library indexes is found by the downloader, also with
+    /// Windows separators. Runs when ECUSTUDIO_REAL_TORRENT points at the .torrent (the file is not in the repository).
+    /// </summary>
+    [Fact]
+    public void Real_torrent_index_paths_resolve_in_the_downloader()
+    {
+        if (Environment.GetEnvironmentVariable("ECUSTUDIO_REAL_TORRENT") is not { Length: > 0 } path || !File.Exists(path)) return;
+        var bytes = File.ReadAllBytes(path);
+        var indexed = TorrentMetadata.Parse(bytes).Files.Select(f => f.Path).ToList();
+        var wanted = indexed.Where(p => p.EndsWith("C447HAXE_00_13.a2l", StringComparison.Ordinal) || p.EndsWith("03G906021MR_9351_ME.zip", StringComparison.Ordinal)).ToList();
+        Assert.Equal(2, wanted.Count);
+        var torrent = Torrent.Load(bytes);
+        var native = MonoTorrentClient.SelectFiles(torrent.Name, torrent.Files, f => f.Path, wanted);
+        Assert.Equal(2, native.Count);
+        var windows = MonoTorrentClient.SelectFiles(torrent.Name, torrent.Files, f => f.Path.Replace('/', '\\'), wanted);
+        Assert.Equal(2, windows.Count);
+    }
+
     [Theory]
     [InlineData("magnet:?xt=urn:btih:C12FE1C06BBA254A9DC9F519B335AA7C1367A88A&dn=Damos+GIFROM", "c12fe1c06bba254a9dc9f519b335aa7c1367a88a", "Damos GIFROM")]
     [InlineData("magnet:?xt=urn:btih:YEX6DQDLXISUVHOJ6UM3GNNKPQJWPKEK", "c12fe1c06bba254a9dc9f519b335aa7c1367a88a", null)]

@@ -95,15 +95,9 @@ public sealed class MonoTorrentClient : ITorrentClient, IAsyncDisposable
                 UploadSlots = 2,
             }.ToSettings());
 
-            var selected = new List<ITorrentManagerFile>();
+            var selected = SelectFiles(torrent.Name, manager.Files, f => f.Path, wanted);
             foreach (var file in manager.Files)
-            {
-                var full = torrent.Files.Count > 1 ? $"{torrent.Name}/{file.Path}" : file.Path;
-                if (wanted.Contains(full)) selected.Add(file);
-                else SetPriorityFast(file, Priority.DoNotDownload);
-            }
-            if (selected.Count != wanted.Count)
-                throw new EcuStudioException("TORRENT_FILE_MISSING", "Requested file is not part of this torrent");
+                if (!selected.Contains(file)) SetPriorityFast(file, Priority.DoNotDownload);
             // Setting one priority through the API refreshes the piece picker for all of them.
             foreach (var file in selected)
             {
@@ -156,6 +150,26 @@ public sealed class MonoTorrentClient : ITorrentClient, IAsyncDisposable
             }
             gate.Release();
         }
+    }
+
+    /// <summary>
+    /// The torrent files for the requested paths ("&lt;torrent name&gt;/dir/file", '/'-separated as in the library index).
+    /// MonoTorrent joins path parts with the OS separator, so on Windows its paths use '\'; both sides are compared
+    /// with '/' separators.
+    /// </summary>
+    public static List<T> SelectFiles<T>(string torrentName, IEnumerable<T> all, Func<T, string> pathOf, IReadOnlyCollection<string> wanted)
+    {
+        var files = all.ToList();
+        static string Norm(string p) => p.Replace('\\', '/').Trim('/');
+        var want = wanted.Select(Norm).ToHashSet(StringComparer.Ordinal);
+        var prefix = files.Count > 1 ? Norm(torrentName) + "/" : "";
+        var selected = files.Where(f => want.Contains(prefix + Norm(pathOf(f)))).ToList();
+        if (selected.Count != want.Count)
+        {
+            var missing = want.Except(files.Select(f => prefix + Norm(pathOf(f)))).First();
+            throw new EcuStudioException("TORRENT_FILE_MISSING", $"Requested file is not part of this torrent: {missing}");
+        }
+        return selected;
     }
 
     private static void RemoveCreatedEmptyFiles(List<string> paths, string saveDirectory)
